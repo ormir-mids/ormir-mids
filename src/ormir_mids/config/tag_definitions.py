@@ -109,6 +109,7 @@ defined_tags = TagDefinitionDict({
     '00180087': 'MagneticFieldStrength',
     '0043102F': 'ImageTypeGE',  # GE private tag for complex data type
     '00089208': 'ImageTypePhilips',  # Philips tag for complex data type
+    '00080008': 'ImageTypeSiemens',  # General tag for image type (use for all? Needs to be parsed)
 
     # Tags for CT
     '00180060': 'XRayEnergy',
