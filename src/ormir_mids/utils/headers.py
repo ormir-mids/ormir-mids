@@ -283,9 +283,11 @@ def separate_headers(raw_header_dict):
             value_tag = _get_value_tag(original_content)
             try:
                 translator = tag_dict.get_translator(numerical_key)
-
+                # Added workaround below for tag (0008,0008) - needed for some Siemens data
                 if 'isList' in original_content:
                     output_dict[named_key] = list(map(translator, original_content[value_tag]))
+                elif numerical_key == '00080008' and len(original_content[value_tag]) == 4:
+                    output_dict[named_key] = list(map(translator, original_content[value_tag]))[2]
                 else:
                     output_dict[named_key] = translator(original_content[value_tag])
                 original_content[value_tag] = ''
