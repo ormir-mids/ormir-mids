@@ -11,7 +11,7 @@ import pathlib
 import argparse
 
 def main():
-    parser = argparse.ArgumentParser(description='Convert DICOM to BIDS format')
+    parser = argparse.ArgumentParser(description='Convert DICOM to ORMIR-MIDS format')
     parser.add_argument('input_folder', type=str, help='Input folder')
     parser.add_argument('output_folder', type=str, help='Output folder')
     parser.add_argument('--anonymize', '-a', const='anon', metavar='pseudo_name', dest='anonymize', type=str, nargs = '?', help='Use the pseudo_name (default: anon) as patient name')
