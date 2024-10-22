@@ -46,14 +46,14 @@ pip install --upgrade nibabel # the default nibabel has bugs
 ## Usage
 `ormir-mids` can be used in two ways: 
     
-1. Running `dcm2mbids` as an executable to convert DICOM data to the MIDS format.
+1. Running `dcm2omids` as an executable to convert DICOM data to the MIDS format.
 2. Importing `ormir-mids` as a Python module to find, load, and interrogate ORMIR-MIDS-format data.
 
 ### 1. Converting DICOMs to the ORMIR-MIDS structure
 
-The commandline script is called `dcm2mbids.exe`. To view the commandline script help type
+The commandline script is called `dcm2omids.exe`. To view the commandline script help type
 ```commandline
-dcm2mbids -h
+dcm2omids -h
 ```
 
 To use `ormir-mids` within Python, import the following modules
