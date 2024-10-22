@@ -70,7 +70,7 @@ class CTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'rx'
+        return 'ct-edi'
 
     @classmethod
     def get_file_name(cls, subject_id: str):
@@ -102,7 +102,7 @@ class PCCTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'rx'
+        return 'ct-pc'
 
     @classmethod
     def get_file_name(cls, subject_id: str):
