@@ -1,0 +1,12 @@
+# Data struct
+directory_tree
+ipywidgets
+matplotlib
+watermark
+traitlets
+requests
+
+# Dataviz
+napari[all]
+pyqt5
+simpleitk
