@@ -4,6 +4,7 @@ ipywidgets
 matplotlib
 watermark
 traitlets
+requests
 
 # Dataviz
 napari[all]

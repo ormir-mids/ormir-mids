@@ -7,9 +7,8 @@ __pycache__/
 *.so
 
 # Project-related file
-*.json
-*.nii.gz
-dicom/
+data/
+bids_output/
 
 # Distribution / packaging
 .Python
