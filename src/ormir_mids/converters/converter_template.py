@@ -1,7 +1,7 @@
 import os
 
 from .abstract_converter import Converter
-from ..dosma_io import MedicalVolume
+from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, get_manufacturer
 
 

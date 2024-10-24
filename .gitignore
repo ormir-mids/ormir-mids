@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Project-related file
+*.json
+*.nii.gz
+dicom/
+
 # Distribution / packaging
 .Python
 build/
