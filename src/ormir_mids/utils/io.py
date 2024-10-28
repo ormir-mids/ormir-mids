@@ -67,7 +67,7 @@ def save_dicom(path, medical_volume, new_series = True):
     dicom_writer.save(new_volume, path)
 
 
-def load_bids(nii_file):
+def load_omids(nii_file):
     """
     Loads a nifti file and its corresponding json files.
 
@@ -89,9 +89,9 @@ def load_bids(nii_file):
 
     try:
         with open(json_base_name + '.json', 'r') as f:
-            bids_header = json.load(f)
+            omids_header = json.load(f)
     except FileNotFoundError:
-        bids_header = {}
+        omids_header = {}
 
     try:
         with open(json_base_name + '_patient.json', 'r') as f:
@@ -106,7 +106,7 @@ def load_bids(nii_file):
         extra_and_meta_header = {'extra': {}, 'meta': {}}
 
     setattr(medical_volume, 'meta_header', extra_and_meta_header['meta'])
-    setattr(medical_volume, 'bids_header', bids_header)
+    setattr(medical_volume, 'omids_header', omids_header)
     setattr(medical_volume, 'patient_header', patient_header)
     setattr(medical_volume, 'extra_header', extra_and_meta_header['extra'])
 
@@ -138,11 +138,11 @@ def save_bids(nii_file, medical_volume):
 
     extra_and_meta_header['meta'] = getattr(medical_volume, 'meta_header', {})
     extra_and_meta_header['extra'] = getattr(medical_volume, 'extra_header', {})
-    bids_header = getattr(medical_volume, 'bids_header', {})
+    omids_header = getattr(medical_volume, 'omids_header', {})
     patient_header = getattr(medical_volume, 'patient_header', {})
 
     with open(json_base_name + '.json', 'w') as f:
-        json.dump(bids_header, f, indent=2)
+        json.dump(omids_header, f, indent=2)
 
     with open(json_base_name + '_patient.json', 'w') as f:
         json.dump(patient_header, f, indent=2)
@@ -151,9 +151,9 @@ def save_bids(nii_file, medical_volume):
         json.dump(extra_and_meta_header, f, indent=2)
 
 
-def find_bids(path, suffix):
+def find_omids(path, suffix):
     """
-    Finds a bids dataset with a specific suffix (e.g. mese).
+    Finds an ORMIR-MIDS dataset with a specific suffix (e.g. mese).
 
     Parameters:
         path (str): Path to the root folder

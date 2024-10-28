@@ -133,3 +133,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/ormir-mids-venv
+.DS_Store
+workspace.code-workspace
+/dicom
