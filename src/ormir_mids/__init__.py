@@ -4,7 +4,7 @@ The python representation of the data is the MedicalVolume class, provided by py
 
 
 Specifically, the MedicalVolumes returned have four additional attributes:
-    - bids_header: a dictionary containing the information contained in the BIDS header
+    - omids_header: a dictionary containing the information contained in the BIDS header
     - patient_header: a dictionary containing patient information
     - extra_header: a dictionary containing raw DICOM tags that are not part of the BIDS header
     - meta_header: a dictionary containing the meta DICOM information

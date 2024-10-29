@@ -107,6 +107,7 @@ def load_omids(nii_file):
 
     setattr(medical_volume, 'meta_header', extra_and_meta_header['meta'])
     setattr(medical_volume, 'omids_header', omids_header)
+    setattr(medical_volume, 'bids_header', omids_header) # for compatibility
     setattr(medical_volume, 'patient_header', patient_header)
     setattr(medical_volume, 'extra_header', extra_and_meta_header['extra'])
 

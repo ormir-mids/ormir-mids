@@ -88,8 +88,8 @@ class CTConverter(Converter):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['ct'])
 
-        med_volume_out.bids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume_out.bids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+        med_volume_out.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume_out.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
         return med_volume_out
 
@@ -120,7 +120,7 @@ class PCCTConverter(Converter):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['pcct'])
 
-        med_volume_out.bids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume_out.bids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+        med_volume_out.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume_out.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
         return med_volume_out

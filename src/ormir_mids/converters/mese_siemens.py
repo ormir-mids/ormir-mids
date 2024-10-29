@@ -43,8 +43,8 @@ class MeSeConverterSiemensMagnitude(Converter):
         med_volume_out = group(med_volume, 'EchoTime')
 
         # rename flip angle. Maybe Siemens-specific again?
-        med_volume_out.bids_header['RefocusingFlipAngle'] = med_volume_out.bids_header.pop('FlipAngle')
-        med_volume_out.bids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
+        med_volume_out.omids_header['RefocusingFlipAngle'] = med_volume_out.omids_header.pop('FlipAngle')
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
 
         return med_volume_out
 

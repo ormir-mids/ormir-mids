@@ -17,8 +17,8 @@ def _is_mese_ge(med_volume: MedicalVolume):
     """
     if 'GE' not in get_manufacturer(med_volume):
         return False
-    scanning_sequence_list = med_volume.bids_header['ScanningSequence']
-    echo_times_list = med_volume.bids_header['EchoTime']
+    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+    echo_times_list = med_volume.omids_header['EchoTime']
 
     if isinstance(echo_times_list, list) and 'SE' in scanning_sequence_list:
         return True
@@ -60,7 +60,7 @@ def _get_image_indices(med_volume: MedicalVolume):
     ima_type_list = get_raw_tag_value(med_volume, '00089208')
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
-    scanning_sequence_list = med_volume.bids_header['ScanningSequence']
+    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
     for i in range(len(flat_ima_type)):
         if (flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] == 'SE'):
@@ -98,9 +98,9 @@ class MeSeConverterGEMagnitude(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['magnitude'])
-        med_volume_out.bids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
         med_volume_out = group(med_volume_out, 'EchoTime')
-        med_volume_out.bids_header['RefocusingFlipAngle'] = 180.0
+        med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
         return med_volume_out
 
 
@@ -129,10 +129,10 @@ class MeSeConverterGEPhase(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['phase'])
-        med_volume_out.bids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
         med_volume_out = group(med_volume_out, 'EchoTime')
         med_volume_out.volume = (med_volume_out.volume - 2048) * math.pi / 2048 # convert to radians
-        med_volume_out.bids_header['RefocusingFlipAngle'] = 180.0
+        med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
         return med_volume_out
 
 
@@ -154,7 +154,7 @@ class MeSeConverterGEReconstructedMap(Converter):
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
         if 'GE' not in get_manufacturer(med_volume):
             return False
-        scanning_sequence_list = med_volume.bids_header['ScanningSequence']
+        scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
         if 'RM' in scanning_sequence_list:
             return True
@@ -164,6 +164,6 @@ class MeSeConverterGEReconstructedMap(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['reco'])
-        med_volume_out.bids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
         return med_volume_out
 

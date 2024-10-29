@@ -42,9 +42,9 @@ class CrConverter(Converter):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, 1) # This will give an error, slices list is just 1?
         # add the important headerds here
-        med_volume_out.bids_header['KVP'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume_out.bids_header['ExposureTime'] = get_raw_tag_value(med_volume, '00181150')[0]
-        med_volume_out.bids_header['X-RayTubeCurrent'] = get_raw_tag_value(med_volume, '00181151')[0]
-        med_volume_out.bids_header['Exposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+        med_volume_out.omids_header['KVP'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume_out.omids_header['ExposureTime'] = get_raw_tag_value(med_volume, '00181150')[0]
+        med_volume_out.omids_header['X-RayTubeCurrent'] = get_raw_tag_value(med_volume, '00181151')[0]
+        med_volume_out.omids_header['Exposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
         return med_volume_out
