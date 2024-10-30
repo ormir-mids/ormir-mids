@@ -20,6 +20,7 @@ Run the tutorial on Colab  &nbsp;&nbsp;&nbsp; [![Open In Colab](https://colab.re
 * Lee Youngjun
 * Jukka Hirvasniemi
 * Gianluca Iori
+* Simone Poncioni
 * Serena Bonaretti
 
 ## Installation
