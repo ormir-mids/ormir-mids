@@ -7,6 +7,7 @@ traitlets
 requests
 
 # Dataviz
-napari[all]
+k3d
+numpy
 pyqt5
 simpleitk
