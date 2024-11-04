@@ -114,7 +114,7 @@ def load_omids(nii_file):
     return medical_volume
 
 
-def save_bids(nii_file, medical_volume):
+def save_omids(nii_file, medical_volume):
     """
     Saves a volume to a nifti file and its corresponding json files.
 
@@ -151,6 +151,7 @@ def save_bids(nii_file, medical_volume):
     with open(json_base_name + '_extra.json', 'w') as f:
         json.dump(extra_and_meta_header, f, indent=2)
 
+save_bids = save_omids
 
 def find_omids(path, suffix):
     """
