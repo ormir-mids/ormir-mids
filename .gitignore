@@ -8,7 +8,7 @@ __pycache__/
 
 # Project-related file
 data/
-bids_output/
+omids_data/
 
 # Distribution / packaging
 .Python
