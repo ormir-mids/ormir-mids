@@ -19,12 +19,19 @@ def _is_megre_siemens(med_volume: MedicalVolume):
     if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
         return False
 
-    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+    try:
+        scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+    except KeyError:
+        #probably enhanced dicom
+        try:
+            scanning_sequence_list = get_raw_tag_value(med_volume, '00189008')
+        except KeyError:
+            return False
     echo_times_list = med_volume.omids_header['EchoTime']
     echo_times_unique = set(echo_times_list)
     n_echo_times = sum(TE > 0. for TE in echo_times_unique)
 
-    if n_echo_times > 1 and 'GR' in scanning_sequence_list:
+    if n_echo_times > 1 and ('GR' in scanning_sequence_list or 'GRADIENT' in scanning_sequence_list):
         return True
     return False
 
