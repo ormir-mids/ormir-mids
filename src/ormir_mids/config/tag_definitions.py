@@ -108,6 +108,7 @@ defined_tags = TagDefinitionDict({
     '00180095': 'PixelBandwidth',
     '00080070': 'Manufacturer',
     '00180084': 'ImagingFrequency',
+    '00189098': 'ImagingFrequency',
     '00180087': 'MagneticFieldStrength',
     '0043102F': 'ImageTypeGE',  # GE private tag for complex data type
     '00089208': 'ImageTypePhilips',  # Philips tag for complex data type

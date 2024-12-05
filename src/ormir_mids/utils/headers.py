@@ -48,7 +48,7 @@ def copy_headers(medical_volume_src, medical_volume_dest):
     setattr(medical_volume_dest, 'bids_header', getattr(medical_volume_dest, 'omids_header')) # for compatibility
 
 
-def get_raw_tag_value(med_volume, tag):
+def get_raw_tag_value(med_volume, tag, alternative_tag=None):
     """
     Gets the value of a tag, regardless of its location in the header. A tag is always defined
     by its DICOM tag number.
@@ -56,6 +56,7 @@ def get_raw_tag_value(med_volume, tag):
     Parameters:
         med_volume (MedicalVolume): the volume to get the tag from
         tag (str): the DICOM tag identifier
+        alternative_tag (str, optional): an alternative tag to use if the first one is not found
 
     Returns:
         (Any): the value of the tag
@@ -69,10 +70,16 @@ def get_raw_tag_value(med_volume, tag):
                 if t in med_volume.omids_header:
                     named_tag = t
                     break
-        if isinstance(med_volume.omids_header[named_tag], list):
-            return list(map(defined_tags.get_translator(named_tag), med_volume.omids_header[named_tag]))
-        else:
-            return defined_tags.get_translator(named_tag)(med_volume.omids_header[named_tag])
+        try:
+            if isinstance(med_volume.omids_header[named_tag], list):
+                return list(map(defined_tags.get_translator(named_tag), med_volume.omids_header[named_tag]))
+            else:
+                return defined_tags.get_translator(named_tag)(med_volume.omids_header[named_tag])
+        except KeyError as e:
+            if alternative_tag:
+                return get_raw_tag_value(med_volume, alternative_tag)
+            else:
+                raise e
 
     if tag in patient_tags:
         # tag is named

@@ -21,27 +21,40 @@ def _is_megre_siemens(med_volume: MedicalVolume):
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
-    echo_times_list = med_volume.omids_header['EchoTime']
-    echo_times_unique = set(echo_times_list)
-    n_echo_times = sum(TE > 0. for TE in echo_times_unique)
-
-    if n_echo_times > 1 and ('GR' in scanning_sequence_list or 'GRADIENT' in scanning_sequence_list):
+    if 'GR' in scanning_sequence_list or 'GRADIENT' in scanning_sequence_list:
         return True
     return False
 
+def _get_ima_type(med_volume):
+    try:
+        ima_type_list = get_raw_tag_value(med_volume, '0043102F')
+        flat_ima_type = [x for xs in ima_type_list for x in xs]
+    except KeyError:
+        #probably enhanced dicom
+        flat_ima_type = get_raw_tag_value(med_volume, '00089208')
+
+        for i in range(len(flat_ima_type)):
+            if flat_ima_type[i].startswith('M'):
+                flat_ima_type[i] = 0
+            elif flat_ima_type[i].startswith('P'):
+                flat_ima_type[i] = 1
+            elif flat_ima_type[i].startswith('R'):
+                flat_ima_type[i] = 2
+            elif flat_ima_type[i].startswith('I'):
+                flat_ima_type[i] = 3
+    return flat_ima_type
 
 def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
     """
     Test if the given MedicalVolume is of the given type.
     Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
-        ima_type (str): The type to test, e.g. "MAGNITUDE", "PHASE"
+        ima_type (int): The type to test, 0 = Magnitude, 1 = Phase, 2 = Real, 3 = Imaginary."
 
     Returns:
         bool: True if the MedicalVolume is of the given type, False otherwise.
     """
-    ima_type_list = get_raw_tag_value(med_volume, '0043102F')
-    flat_ima_type = [x for xs in ima_type_list for x in xs]
+    flat_ima_type = _get_ima_type(med_volume)
 
     if ima_type in flat_ima_type:
         return True
@@ -58,7 +71,7 @@ def _water_fat_shift_calc(med_volume: MedicalVolume):
         float: the value of the water-fat shift in pixels.
     """
     bw_per_pix = get_raw_tag_value(med_volume, '00180095')[0]
-    res_freq = get_raw_tag_value(med_volume, '00180084')[0]
+    res_freq = get_raw_tag_value(med_volume, '00180084', '00189098')[0]
     water_fat_diff_ppm = 3.35
     water_fat_shift_hz = water_fat_diff_ppm * res_freq
     water_fat_shift_px = water_fat_shift_hz / bw_per_pix
@@ -81,28 +94,37 @@ def _get_image_indices(med_volume: MedicalVolume):
                  'imaginary': []
                  }
 
-    ima_type_list = get_raw_tag_value(med_volume, '0043102F')
-    flat_ima_type = [x for xs in ima_type_list for x in xs]
-
-    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
-    # DCam - Code below causes errors? Enhanced DICOM?
-    # if ~isinstance(scanning_sequence_list, list):
-        # scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
+    flat_ima_type = _get_ima_type(med_volume)
 
     for i in range(len(flat_ima_type)):
-        if flat_ima_type[i] == 0 and scanning_sequence_list[i] == 'GR':
+        if flat_ima_type[i] == 0:
             ima_index['magnitude'].append(i)
-        elif flat_ima_type[i] == 1 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 1:
             ima_index['phase'].append(i)
-        elif flat_ima_type[i] == 2 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 2:
             ima_index['real'].append(i)
-        elif flat_ima_type[i] == 3 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 3:
             ima_index['imaginary'].append(i)
-        elif scanning_sequence_list[i] == 'RM':
-            ima_index['reco'].append(i)
 
     return ima_index
 
+def _get_echo_times(echo_times_list, indices, ima_type: str):
+    """
+    Get the echo times for the given ima_type.
+    Args:
+        echo_times_list: list of echo times as taken from the header
+        indices: list of indices for the ima_type
+        ima_type: 'magnitude', 'phase', 'real', or 'imaginary'
+
+    Returns:
+
+    """
+    try:
+        echo_times_nu = [echo_times_list[i] for i in indices[ima_type]]
+    except TypeError:
+        # echo time is not a vector
+        echo_times_nu = [echo_times_list] * len(indices[ima_type])
+    return echo_times_nu
 
 class MeGreConverterSiemensMagnitude(Converter):
 
@@ -138,7 +160,7 @@ class MeGreConverterSiemensMagnitude(Converter):
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
-        echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
+        echo_times_nu = _get_echo_times(echo_times_list, indices, 'magnitude')
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
@@ -181,7 +203,7 @@ class MeGreConverterSiemensPhase(Converter):
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
-        echo_times_nu = [echo_times_list[i] for i in indices['phase']]
+        echo_times_nu = _get_echo_times(echo_times_list, indices, 'phase')
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
@@ -189,6 +211,7 @@ class MeGreConverterSiemensPhase(Converter):
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
         return med_volume_out
+
 
 
 class MeGreConverterSiemensReal(Converter):
@@ -224,7 +247,7 @@ class MeGreConverterSiemensReal(Converter):
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
-        echo_times_nu = [echo_times_list[i] for i in indices['real']]
+        echo_times_nu = _get_echo_times(echo_times_list, indices, 'real')
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
@@ -267,7 +290,7 @@ class MeGreConverterSiemensImaginary(Converter):
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
-        echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
+        echo_times_nu = _get_echo_times(echo_times_list, indices, 'imaginary')
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
