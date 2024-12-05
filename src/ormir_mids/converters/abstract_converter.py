@@ -49,4 +49,12 @@ class Converter(ABC):
                     found_files.append(os.path.join(root, f))
 
         return found_files
+
+    @classmethod
+    def is_multiseries(cls):
+        return False
+
+    @classmethod
+    def multiseries_concat_tag(cls):
+        return 'EchoTime'
             

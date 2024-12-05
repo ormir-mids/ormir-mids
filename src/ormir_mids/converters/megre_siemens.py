@@ -19,14 +19,8 @@ def _is_megre_siemens(med_volume: MedicalVolume):
     if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
         return False
 
-    try:
-        scanning_sequence_list = med_volume.omids_header['ScanningSequence']
-    except KeyError:
-        #probably enhanced dicom
-        try:
-            scanning_sequence_list = get_raw_tag_value(med_volume, '00189008')
-        except KeyError:
-            return False
+    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+
     echo_times_list = med_volume.omids_header['EchoTime']
     echo_times_unique = set(echo_times_list)
     n_echo_times = sum(TE > 0. for TE in echo_times_unique)
@@ -113,6 +107,10 @@ def _get_image_indices(med_volume: MedicalVolume):
 class MeGreConverterSiemensMagnitude(Converter):
 
     @classmethod
+    def is_multiseries(cls):
+        return True
+
+    @classmethod
     def get_name(cls):
         return 'MEGRE_Siemens_Magnitude'
 
@@ -151,6 +149,10 @@ class MeGreConverterSiemensMagnitude(Converter):
 
 
 class MeGreConverterSiemensPhase(Converter):
+
+    @classmethod
+    def is_multiseries(cls):
+        return True
 
     @classmethod
     def get_name(cls):
@@ -192,6 +194,10 @@ class MeGreConverterSiemensPhase(Converter):
 class MeGreConverterSiemensReal(Converter):
 
     @classmethod
+    def is_multiseries(cls):
+        return True
+
+    @classmethod
     def get_name(cls):
         return 'MEGRE_Siemens_Real'
 
@@ -229,6 +235,10 @@ class MeGreConverterSiemensReal(Converter):
 
 
 class MeGreConverterSiemensImaginary(Converter):
+
+    @classmethod
+    def is_multiseries(cls):
+        return True
 
     @classmethod
     def get_name(cls):

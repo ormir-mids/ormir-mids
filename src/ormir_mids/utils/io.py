@@ -18,6 +18,7 @@ def load_dicom(path, group_by = None):
     """
     dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', ignore_ext=True)
     medical_volume = dicom_reader.load(path)[0]
+    setattr(medical_volume, 'path', path)
     new_volume = headers.dicom_volume_to_bids(medical_volume)
     if group_by is not None:
         new_volume = headers.group(new_volume, group_by)
@@ -38,6 +39,8 @@ def load_dicom_with_subfolders(path):
     dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', ignore_ext=True)
     def _read_dicom_recursive(rootdir):
         output_list = dicom_reader.load(rootdir)
+        for element in output_list:
+            setattr(element, 'path', rootdir)
         for file in os.listdir(rootdir):
             d = os.path.join(rootdir, file)
             if os.path.isdir(d):

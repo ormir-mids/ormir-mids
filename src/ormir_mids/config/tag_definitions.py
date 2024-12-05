@@ -90,6 +90,7 @@ defined_tags = TagDefinitionDict({
 
     # standard BIDS recommended
     '00180020': 'ScanningSequence',
+    '00189008': 'ScanningSequence',
     '00180021': 'SequenceVariant',
     '00180022': 'ScanOptions',
     '00180024': 'SequenceName',
