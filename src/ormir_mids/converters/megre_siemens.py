@@ -5,16 +5,18 @@ from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
 
-def _is_megre_ge(med_volume: MedicalVolume):
+# TODO: DC-3T - Incorporate changes from offline megre_siemens converter
+
+def _is_megre_siemens(med_volume: MedicalVolume):
     """
-    Check if the given MedicalVolume is a MEGRE GE dataset.
-    Parameters:
+    Check if the given MedicalVolume is a MEGRE Siemens dataset.
+    Args:
         med_volume: The MedicalVolume to test.
 
     Returns:
-        bool: True if the MedicalVolume is a MEGRE GE dataset, False otherwise.
+        bool: True if the MedicalVolume is a MEGRE Siemens dataset, False otherwise.
     """
-    if 'GE' not in get_manufacturer(med_volume):
+    if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
         return False
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
@@ -30,7 +32,7 @@ def _is_megre_ge(med_volume: MedicalVolume):
 def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
     """
     Test if the given MedicalVolume is of the given type.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
         ima_type (str): The type to test, e.g. "MAGNITUDE", "PHASE"
 
@@ -48,7 +50,7 @@ def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
 def _water_fat_shift_calc(med_volume: MedicalVolume):
     """
     Calculate water-fat shift in pixels from image header.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
 
     Returns:
@@ -66,7 +68,7 @@ def _water_fat_shift_calc(med_volume: MedicalVolume):
 def _get_image_indices(med_volume: MedicalVolume):
     """
     Get the indices for magnitude, phase, and reco for the given MedicalVolume.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
 
     Returns:
@@ -82,8 +84,9 @@ def _get_image_indices(med_volume: MedicalVolume):
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
-    if ~isinstance(scanning_sequence_list, list):
-        scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
+    # DCam - Code below causes errors? Enhanced DICOM?
+    # if ~isinstance(scanning_sequence_list, list):
+        # scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
 
     for i in range(len(flat_ima_type)):
         if flat_ima_type[i] == 0 and scanning_sequence_list[i] == 'GR':
@@ -100,11 +103,11 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
-class MeGreConverterGEMagnitude(Converter):
+class MeGreConverterSiemensMagnitude(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Magnitude'
+        return 'MEGRE_Siemens_Magnitude'
 
     @classmethod
     def get_directory(cls):
@@ -116,7 +119,7 @@ class MeGreConverterGEMagnitude(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_siemens(med_volume):
             return False
 
         return _test_ima_type(med_volume, 0)
@@ -140,11 +143,11 @@ class MeGreConverterGEMagnitude(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEPhase(Converter):
+class MeGreConverterSiemensPhase(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Phase'
+        return 'MEGRE_Siemens_Phase'
 
     @classmethod
     def get_directory(cls):
@@ -156,7 +159,7 @@ class MeGreConverterGEPhase(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_siemens(med_volume):
             return False
 
         return _test_ima_type(med_volume, 1)
@@ -179,11 +182,11 @@ class MeGreConverterGEPhase(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEReal(Converter):
+class MeGreConverterSiemensReal(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Real'
+        return 'MEGRE_Siemens_Real'
 
     @classmethod
     def get_directory(cls):
@@ -195,7 +198,7 @@ class MeGreConverterGEReal(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_siemens(med_volume):
             return False
 
         return _test_ima_type(med_volume, 2)
@@ -218,11 +221,11 @@ class MeGreConverterGEReal(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEImaginary(Converter):
+class MeGreConverterSiemensImaginary(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Imaginary'
+        return 'MEGRE_Siemens_Imaginary'
 
     @classmethod
     def get_directory(cls):
@@ -234,7 +237,7 @@ class MeGreConverterGEImaginary(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_siemens(med_volume):
             return False
 
         return _test_ima_type(med_volume, 3)
@@ -257,12 +260,12 @@ class MeGreConverterGEImaginary(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEReconstructedMap(Converter):
+class MeGreConverterSiemensReconstructedMap(Converter):
     # TO DO - new classes for FF, water, fat etc.
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Reconstructed'
+        return 'MEGRE_Siemens_Reconstructed'
 
     @classmethod
     def get_directory(cls):
@@ -274,7 +277,7 @@ class MeGreConverterGEReconstructedMap(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'GE' not in get_manufacturer(med_volume):
+        if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
             return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 

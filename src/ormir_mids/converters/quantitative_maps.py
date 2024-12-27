@@ -2,8 +2,8 @@ import os
 from abc import abstractmethod
 
 from .abstract_converter import Converter
-from ..dosma_io import MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, reduce, copy_volume_with_bids_headers
+from voxel import MedicalVolume
+from ..utils.headers import get_raw_tag_value, group, reduce, copy_volume_with_omids_headers
 
 
 class AbstractQuantitativeConverter(Converter):
@@ -37,9 +37,9 @@ class AbstractQuantitativeConverter(Converter):
         if med_volume.ndim == 4:
             med_volume_out = reduce(med_volume, 0)
         else:
-            med_volume_out = copy_volume_with_bids_headers(med_volume)
+            med_volume_out = copy_volume_with_omids_headers(med_volume)
 
-        med_volume_out.bids_header['PulseSequenceType'] = f'{cls._get_tag().upper()} Map'
+        med_volume_out.omids_header['PulseSequenceType'] = f'{cls._get_tag().upper()} Map'
 
         return med_volume_out
 

@@ -1,11 +1,21 @@
 import json
 import os
 
-from ..dosma_io import DicomReader, DicomWriter, NiftiReader, NiftiWriter
+from voxel import DicomReader, DicomWriter, NiftiReader, NiftiWriter
 from ..utils import headers
 
 
 def load_dicom(path, group_by = None):
+    """
+    Loads all dicom files in a folder.
+
+    Parameters:
+        path (str): Path to the folder
+        group_by (str): If not None, group the volumes by the specified header
+
+    Returns:
+        MedicalVolume with muscle-bids headers
+    """
     dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', ignore_ext=True)
     medical_volume = dicom_reader.load(path)[0]
     new_volume = headers.dicom_volume_to_bids(medical_volume)
@@ -40,13 +50,33 @@ def load_dicom_with_subfolders(path):
 
 
 def save_dicom(path, medical_volume, new_series = True):
+    """
+    Saves a volume to a folder.
+
+    Parameters:
+        path (str): Path to the folder
+        medical_volume (MedicalVolume): The volume to save
+        new_series (bool): If True, a new series is created
+
+    Returns:
+        None
+    """
     new_volume = headers.bids_volume_to_dicom(medical_volume, new_series)
     #print(new_volume.headers().shape)
     dicom_writer = DicomWriter(num_workers=0)
     dicom_writer.save(new_volume, path)
 
 
-def load_bids(nii_file):
+def load_omids(nii_file):
+    """
+    Loads a nifti file and its corresponding json files.
+
+    Parameters:
+        nii_file (str): Path to the nifti file
+
+    Returns:
+        MedicalVolume: The loaded volume
+    """
     nifti_reader = NiftiReader()
     medical_volume = nifti_reader.load(nii_file)
     json_base_name = nii_file
@@ -59,9 +89,9 @@ def load_bids(nii_file):
 
     try:
         with open(json_base_name + '.json', 'r') as f:
-            bids_header = json.load(f)
+            omids_header = json.load(f)
     except FileNotFoundError:
-        bids_header = {}
+        omids_header = {}
 
     try:
         with open(json_base_name + '_patient.json', 'r') as f:
@@ -76,14 +106,25 @@ def load_bids(nii_file):
         extra_and_meta_header = {'extra': {}, 'meta': {}}
 
     setattr(medical_volume, 'meta_header', extra_and_meta_header['meta'])
-    setattr(medical_volume, 'bids_header', bids_header)
+    setattr(medical_volume, 'omids_header', omids_header)
+    setattr(medical_volume, 'bids_header', omids_header) # for compatibility
     setattr(medical_volume, 'patient_header', patient_header)
     setattr(medical_volume, 'extra_header', extra_and_meta_header['extra'])
 
     return medical_volume
 
 
-def save_bids(nii_file, medical_volume):
+def save_omids(nii_file, medical_volume):
+    """
+    Saves a volume to a nifti file and its corresponding json files.
+
+    Parameters:
+        nii_file (str): Path to the nifti file
+        medical_volume (MedicalVolume): The volume to save
+
+    Returns:
+        None
+    """
     nifti_writer = NiftiWriter()
     nifti_writer.save(medical_volume, nii_file)
     json_base_name = nii_file
@@ -98,11 +139,11 @@ def save_bids(nii_file, medical_volume):
 
     extra_and_meta_header['meta'] = getattr(medical_volume, 'meta_header', {})
     extra_and_meta_header['extra'] = getattr(medical_volume, 'extra_header', {})
-    bids_header = getattr(medical_volume, 'bids_header', {})
+    omids_header = getattr(medical_volume, 'omids_header', {})
     patient_header = getattr(medical_volume, 'patient_header', {})
 
     with open(json_base_name + '.json', 'w') as f:
-        json.dump(bids_header, f, indent=2)
+        json.dump(omids_header, f, indent=2)
 
     with open(json_base_name + '_patient.json', 'w') as f:
         json.dump(patient_header, f, indent=2)
@@ -110,10 +151,11 @@ def save_bids(nii_file, medical_volume):
     with open(json_base_name + '_extra.json', 'w') as f:
         json.dump(extra_and_meta_header, f, indent=2)
 
+save_bids = save_omids
 
-def find_bids(path, suffix):
+def find_omids(path, suffix):
     """
-    Finds a bids dataset with a specific suffix (e.g. mese).
+    Finds an ORMIR-MIDS dataset with a specific suffix (e.g. mese).
 
     Parameters:
         path (str): Path to the root folder

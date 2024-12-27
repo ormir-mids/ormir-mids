@@ -5,16 +5,16 @@ from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
 
-def _is_megre_ge(med_volume: MedicalVolume):
+def _is_megre_philips(med_volume: MedicalVolume):
     """
-    Check if the given MedicalVolume is a MEGRE GE dataset.
-    Parameters:
+    Check if the given MedicalVolume is a MEGRE Philips dataset.
+    Args:
         med_volume: The MedicalVolume to test.
 
     Returns:
-        bool: True if the MedicalVolume is a MEGRE GE dataset, False otherwise.
+        bool: True if the MedicalVolume is a MEGRE Philips dataset, False otherwise.
     """
-    if 'GE' not in get_manufacturer(med_volume):
+    if 'PHILIPS'.lower() not in get_manufacturer(med_volume).lower():
         return False
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
@@ -30,14 +30,14 @@ def _is_megre_ge(med_volume: MedicalVolume):
 def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
     """
     Test if the given MedicalVolume is of the given type.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
         ima_type (str): The type to test, e.g. "MAGNITUDE", "PHASE"
 
     Returns:
         bool: True if the MedicalVolume is of the given type, False otherwise.
     """
-    ima_type_list = get_raw_tag_value(med_volume, '0043102F')
+    ima_type_list = get_raw_tag_value(med_volume, '00089208')
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
     if ima_type in flat_ima_type:
@@ -48,7 +48,7 @@ def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
 def _water_fat_shift_calc(med_volume: MedicalVolume):
     """
     Calculate water-fat shift in pixels from image header.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
 
     Returns:
@@ -66,7 +66,7 @@ def _water_fat_shift_calc(med_volume: MedicalVolume):
 def _get_image_indices(med_volume: MedicalVolume):
     """
     Get the indices for magnitude, phase, and reco for the given MedicalVolume.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
 
     Returns:
@@ -75,24 +75,26 @@ def _get_image_indices(med_volume: MedicalVolume):
     ima_index = {'magnitude': [],
                  'phase': [],
                  'real': [],
-                 'imaginary': []
+                 'imaginary': [],
+                 'reco': []
                  }
 
-    ima_type_list = get_raw_tag_value(med_volume, '0043102F')
+    ima_type_list = get_raw_tag_value(med_volume, '00089208')  # DC-3T: Or 00080008 for Classic DICOM?
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
-    if ~isinstance(scanning_sequence_list, list):
-        scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
+    # DCam - The below code causes errors. Remove?
+    #if ~isinstance(scanning_sequence_list, list):
+        #scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
 
     for i in range(len(flat_ima_type)):
-        if flat_ima_type[i] == 0 and scanning_sequence_list[i] == 'GR':
+        if flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] == 'GR':
             ima_index['magnitude'].append(i)
-        elif flat_ima_type[i] == 1 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] == 'GR':
             ima_index['phase'].append(i)
-        elif flat_ima_type[i] == 2 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 'REAL' and scanning_sequence_list[i] == 'GR':
             ima_index['real'].append(i)
-        elif flat_ima_type[i] == 3 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == "IMAGINARY" and scanning_sequence_list[i] == 'GR':
             ima_index['imaginary'].append(i)
         elif scanning_sequence_list[i] == 'RM':
             ima_index['reco'].append(i)
@@ -100,11 +102,11 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
-class MeGreConverterGEMagnitude(Converter):
+class MeGreConverterPhilipsMagnitude(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Magnitude'
+        return 'MEGRE_Philips_Magnitude'
 
     @classmethod
     def get_directory(cls):
@@ -116,7 +118,7 @@ class MeGreConverterGEMagnitude(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_philips(med_volume):
             return False
 
         return _test_ima_type(med_volume, 0)
@@ -140,11 +142,11 @@ class MeGreConverterGEMagnitude(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEPhase(Converter):
+class MeGreConverterPhilipsPhase(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Phase'
+        return 'MEGRE_Philips_Phase'
 
     @classmethod
     def get_directory(cls):
@@ -156,7 +158,7 @@ class MeGreConverterGEPhase(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_philips(med_volume):
             return False
 
         return _test_ima_type(med_volume, 1)
@@ -179,11 +181,11 @@ class MeGreConverterGEPhase(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEReal(Converter):
+class MeGreConverterPhilipsReal(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Real'
+        return 'MEGRE_Philips_Real'
 
     @classmethod
     def get_directory(cls):
@@ -195,7 +197,7 @@ class MeGreConverterGEReal(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_philips(med_volume):
             return False
 
         return _test_ima_type(med_volume, 2)
@@ -218,11 +220,11 @@ class MeGreConverterGEReal(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEImaginary(Converter):
+class MeGreConverterPhilipsImaginary(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Imaginary'
+        return 'MEGRE_Philips_Imaginary'
 
     @classmethod
     def get_directory(cls):
@@ -234,7 +236,7 @@ class MeGreConverterGEImaginary(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
+        if not _is_megre_philips(med_volume):
             return False
 
         return _test_ima_type(med_volume, 3)
@@ -257,12 +259,12 @@ class MeGreConverterGEImaginary(Converter):
         return med_volume_out
 
 
-class MeGreConverterGEReconstructedMap(Converter):
+class MeGreConverterPhilipsReconstructedMap(Converter):
     # TO DO - new classes for FF, water, fat etc.
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_GE_Reconstructed'
+        return 'MEGRE_Philips_Reconstructed'
 
     @classmethod
     def get_directory(cls):
@@ -274,7 +276,7 @@ class MeGreConverterGEReconstructedMap(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'GE' not in get_manufacturer(med_volume):
+        if 'PHILIPS'.lower() not in get_manufacturer(med_volume).lower():
             return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 

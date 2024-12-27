@@ -8,7 +8,7 @@ import pydicom.dataset
 from pydicom.uid import generate_uid
 
 from ..config.tag_definitions import defined_tags, patient_tags
-from ..dosma_io.med_volume import MedicalVolume
+from voxel import MedicalVolume
 
 from itertools import groupby
 
@@ -43,8 +43,9 @@ def copy_headers(medical_volume_src, medical_volume_dest):
     Returns:
         No return value
     """
-    for header in ['bids_header', 'meta_header', 'patient_header', 'extra_header']:
+    for header in ['omids_header', 'meta_header', 'patient_header', 'extra_header']:
         setattr(medical_volume_dest, header, copy.deepcopy(getattr(medical_volume_src, header, None)))
+    setattr(medical_volume_dest, 'bids_header', getattr(medical_volume_dest, 'omids_header')) # for compatibility
 
 
 def get_raw_tag_value(med_volume, tag):
@@ -52,7 +53,7 @@ def get_raw_tag_value(med_volume, tag):
     Gets the value of a tag, regardless of its location in the header. A tag is always defined
     by its DICOM tag number.
 
-    Args:
+    Parameters:
         med_volume (MedicalVolume): the volume to get the tag from
         tag (str): the DICOM tag identifier
 
@@ -65,13 +66,13 @@ def get_raw_tag_value(med_volume, tag):
         if isinstance(named_tag, list):
             # tag is a list of tags. Find out what tag it actually is stored
             for t in named_tag[:]:
-                if t in med_volume.bids_header:
+                if t in med_volume.omids_header:
                     named_tag = t
                     break
-        if isinstance(med_volume.bids_header[named_tag], list):
-            return list(map(defined_tags.get_translator(named_tag), med_volume.bids_header[named_tag]))
+        if isinstance(med_volume.omids_header[named_tag], list):
+            return list(map(defined_tags.get_translator(named_tag), med_volume.omids_header[named_tag]))
         else:
-            return defined_tags.get_translator(named_tag)(med_volume.bids_header[named_tag])
+            return defined_tags.get_translator(named_tag)(med_volume.omids_header[named_tag])
 
     if tag in patient_tags:
         # tag is named
@@ -106,7 +107,7 @@ def replace_volume(medical_volume, new_data):
     copy_headers(medical_volume, new_volume)
     return new_volume
 
-def copy_volume_with_bids_headers(medical_volume):
+def copy_volume_with_omids_headers(medical_volume):
     """ Creates a copy of a medical volume with the BIDS headers
 
     Parameters:
@@ -315,7 +316,7 @@ def separate_headers(raw_header_dict):
 def remerge_headers(bids_dict, patient_dict, raw_header_dict):
     """
     Re-merge the three dictionaries into one header dictionary.
-    Args:
+    Parameters:
         bids_dict: the bids dictionary
         patient_dict: the patient dictionary
         raw_header_dict: the raw header dictionary
@@ -365,7 +366,7 @@ def slice_volume_3d(medical_volume, slices_list):
     assert n_dim == 3, "Only 3D volumes are supported"
     new_volume = np.copy(medical_volume.volume[:,:,slices_list])
 
-    headers = remerge_headers(medical_volume.bids_header, medical_volume.patient_header, medical_volume.extra_header)
+    headers = remerge_headers(medical_volume.omids_header, medical_volume.patient_header, medical_volume.extra_header)
     new_headers = {}
     for key, value in headers.items():
         if 'isList' in value: # value is a list
@@ -385,6 +386,7 @@ def slice_volume_3d(medical_volume, slices_list):
         new_headers[key] = new_value
     new_bids, new_patient, new_raw = separate_headers(new_headers)
     new_volume = MedicalVolume(new_volume, medical_volume.affine)
+    setattr(new_volume, 'omids_header', new_bids)
     setattr(new_volume, 'bids_header', new_bids)
     setattr(new_volume, 'patient_header', new_patient)
     setattr(new_volume, 'extra_header', new_raw)
@@ -393,7 +395,7 @@ def slice_volume_3d(medical_volume, slices_list):
 
 
 def concatenate_volumes_3d(volumes_list):
-    """ this function concatenates a list of 3d volumes into one volume
+    """ This function concatenates a list of 3d volumes into one single 3D volume
 
     Parameters:
         volumes_list (list): the list of volumes to concatenate
@@ -412,7 +414,7 @@ def concatenate_volumes_3d(volumes_list):
 
     n_slices_list = [x.volume.shape[2] for x in volumes_list]
 
-    remerged_header_list = [ remerge_headers(x.bids_header, x.patient_header, x.extra_header) for x in volumes_list ]
+    remerged_header_list = [ remerge_headers(x.omids_header, x.patient_header, x.extra_header) for x in volumes_list ]
 
     all_tags = remerged_header_list[0].keys()
     new_headers_dict = {}
@@ -452,7 +454,8 @@ def concatenate_volumes_3d(volumes_list):
 
     new_bids, new_patient, new_raw = separate_headers(new_headers_dict)
     new_volume = MedicalVolume(new_volume, volumes_list[0].affine)
-    setattr(new_volume, 'bids_header', new_bids)
+    setattr(new_volume, 'omids_header', new_bids)
+    setattr(new_volume, 'bids_header', new_bids) # for compatibility
     setattr(new_volume, 'patient_header', new_patient)
     setattr(new_volume, 'extra_header', new_raw)
     setattr(new_volume, 'meta_header', getattr(volumes_list[0], 'meta_header'))
@@ -472,12 +475,12 @@ def group(medical_volume, key):
 
     """
 
-    assert hasattr(medical_volume, 'bids_header'), 'Error grouping: medical volume must have a bids header'
+    assert hasattr(medical_volume, 'omids_header'), 'Error grouping: medical volume must have a bids header'
     assert medical_volume.ndim == 3, 'Error grouping: medical volume must be three dimensional'
-    assert key in medical_volume.bids_header, f'Error: medical volume does not have {key}'
+    assert key in medical_volume.omids_header, f'Error: medical volume does not have {key}'
 
     indices_dict = OrderedDict({})
-    all_values = medical_volume.bids_header[key]
+    all_values = medical_volume.omids_header[key]
     if type(all_values) != list:
         return medical_volume  # nothing to do
 
@@ -522,8 +525,8 @@ def group(medical_volume, key):
                     element['is4dList'] = True
 
 
-    medical_volume_out.bids_header['FourthDimension'] = key
-    medical_volume_out.bids_header[key] = list(indices_dict.keys())  # only keep the different values
+    medical_volume_out.omids_header['FourthDimension'] = key
+    medical_volume_out.omids_header[key] = list(indices_dict.keys())  # only keep the different values
     group_tags(medical_volume_out.extra_header)
     group_tags(medical_volume_out.meta_header)
 
@@ -542,8 +545,8 @@ def ungroup(medical_volume):
     """
 
 
-    assert hasattr(medical_volume, 'bids_header'), 'Error grouping: medical volume must have a bids header'
-    assert 'FourthDimension' in medical_volume.bids_header, f'Error: medical volume does not have a FourthDimension key'
+    assert hasattr(medical_volume, 'omids_header'), 'Error grouping: medical volume must have a bids header'
+    assert 'FourthDimension' in medical_volume.omids_header, f'Error: medical volume does not have a FourthDimension key'
 
     if medical_volume.ndim == 3:
         # only unravel headers
@@ -562,8 +565,8 @@ def ungroup(medical_volume):
     medical_volume_out = MedicalVolume(new_volume, medical_volume.affine)
     copy_headers(medical_volume, medical_volume_out)
 
-    fourth_dimension_key = medical_volume.bids_header['FourthDimension']
-    fourth_dimension_value = medical_volume.bids_header[fourth_dimension_key]
+    fourth_dimension_key = medical_volume.omids_header['FourthDimension']
+    fourth_dimension_value = medical_volume.omids_header[fourth_dimension_key]
     new_fourth_dimension_value = list(itertools.chain(*[ [x]*n_slices for x in fourth_dimension_value ]))
     # multiply the value list
 
@@ -579,8 +582,8 @@ def ungroup(medical_volume):
                 element[value_tag] = new_value_list
                 element.pop('is4dList')
 
-    medical_volume_out.bids_header.pop('FourthDimension')
-    medical_volume_out.bids_header[fourth_dimension_key] = new_fourth_dimension_value
+    medical_volume_out.omids_header.pop('FourthDimension')
+    medical_volume_out.omids_header[fourth_dimension_key] = new_fourth_dimension_value
 
     ungroup_tags(medical_volume_out.extra_header)
     ungroup_tags(medical_volume_out.meta_header)
@@ -591,7 +594,7 @@ def ungroup(medical_volume):
 def dicom_volume_to_bids(medical_volume):
     """
     Converts a medical volume to a BIDS medical volume by creating and attaching the appropriate BIDS headers.
-    Args:
+    Parameters:
         medical_volume (MedicalVolume): the medical volume to convert
 
     Returns:
@@ -602,7 +605,8 @@ def dicom_volume_to_bids(medical_volume):
     compressed_meta_header, compressed_header = headers_to_dicts(medical_volume.headers())
     bids_dict, patient_dict, raw_header_dict = separate_headers(compressed_header)
     setattr(medical_volume, 'meta_header', compressed_meta_header)
-    setattr(medical_volume, 'bids_header', bids_dict)
+    setattr(medical_volume, 'omids_header', bids_dict)
+    setattr(medical_volume, 'bids_header', bids_dict) # for compatibility
     setattr(medical_volume, 'patient_header', patient_dict)
     setattr(medical_volume, 'extra_header', raw_header_dict)
     return medical_volume
@@ -619,14 +623,14 @@ def bids_volume_to_dicom(medical_volume, new_series=False):
     Returns:
         MedicalVolume: the medical volume that can be saved as DICOM
     """
-    if 'FourthDimension' in medical_volume.bids_header:
+    if 'FourthDimension' in medical_volume.omids_header:
         medical_volume = ungroup(medical_volume)
 
-    bids_header = getattr(medical_volume, 'bids_header', {})
+    omids_header = getattr(medical_volume, 'omids_header', {})
     meta_header = getattr(medical_volume, 'meta_header', None)
     patient_header = getattr(medical_volume, 'patient_header', {})
     extra_header = getattr(medical_volume, 'extra_header', {})
-    merged_header = remerge_headers(bids_header, patient_header, extra_header)
+    merged_header = remerge_headers(omids_header, patient_header, extra_header)
     new_header_list = dicts_to_headers(medical_volume.shape[2], merged_header, meta_header)
 
     new_series_uid = generate_uid()
@@ -653,13 +657,13 @@ def reduce(med_volume, index):
         MedicalVolume: the 3D medical volume with headers
     """
 
-    fourth_dimension_tag = med_volume.bids_header['FourthDimension']
+    fourth_dimension_tag = med_volume.omids_header['FourthDimension']
     new_volume = med_volume.volume[:,:,:,index]
     new_volume = MedicalVolume(new_volume, med_volume.affine)
     copy_headers(med_volume, new_volume)
-    new_volume.bids_header[fourth_dimension_tag] = [new_volume.bids_header[fourth_dimension_tag][index]]
+    new_volume.omids_header[fourth_dimension_tag] = [new_volume.omids_header[fourth_dimension_tag][index]]
     new_volume = ungroup(new_volume)
-    del new_volume.bids_header[fourth_dimension_tag]
+    del new_volume.omids_header[fourth_dimension_tag]
     return new_volume
 
 

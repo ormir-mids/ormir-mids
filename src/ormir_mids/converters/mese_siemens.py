@@ -1,7 +1,7 @@
 import os
 
 from .abstract_converter import Converter
-from ..dosma_io import MedicalVolume
+from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, get_manufacturer
 
 
@@ -43,8 +43,8 @@ class MeSeConverterSiemensMagnitude(Converter):
         med_volume_out = group(med_volume, 'EchoTime')
 
         # rename flip angle. Maybe Siemens-specific again?
-        med_volume_out.bids_header['RefocusingFlipAngle'] = med_volume_out.bids_header.pop('FlipAngle')
-        med_volume_out.bids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
+        med_volume_out.omids_header['RefocusingFlipAngle'] = med_volume_out.omids_header.pop('FlipAngle')
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
 
         return med_volume_out
 

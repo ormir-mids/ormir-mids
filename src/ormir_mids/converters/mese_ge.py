@@ -6,16 +6,16 @@ from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
 
-def _is_mese_philips(med_volume: MedicalVolume):
+def _is_mese_ge(med_volume: MedicalVolume):
     """
-    Check if the given MedicalVolume is a MESE Philips dataset.
-    Parameters:
+    Check if the given MedicalVolume is a MESE GE dataset.
+    Args:
         med_volume: The MedicalVolume to test.
 
     Returns:
-        bool: True if the MedicalVolume is a MESE Philips dataset, False otherwise.
+        bool: True if the MedicalVolume is a MESE GE dataset, False otherwise.
     """
-    if 'PHILIPS' not in get_manufacturer(med_volume):
+    if 'GE' not in get_manufacturer(med_volume):
         return False
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
     echo_times_list = med_volume.omids_header['EchoTime']
@@ -28,7 +28,7 @@ def _is_mese_philips(med_volume: MedicalVolume):
 def _test_ima_type(med_volume: MedicalVolume, ima_type: str):
     """
     Test if the given MedicalVolume is of the given type.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
         ima_type (str): The type to test, e.g. "MAGNITUDE", "PHASE"
 
@@ -46,7 +46,7 @@ def _test_ima_type(med_volume: MedicalVolume, ima_type: str):
 def _get_image_indices(med_volume: MedicalVolume):
     """
     Get the indices for magnitude, phase, and reco for the given MedicalVolume.
-    Parameters:
+    Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
 
     Returns:
@@ -73,11 +73,11 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
-class MeSeConverterPhilipsMagnitude(Converter):
+class MeSeConverterGEMagnitude(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MESE_Philips_Magnitude'
+        return 'MESE_GE_Magnitude'
 
     @classmethod
     def get_directory(cls):
@@ -89,7 +89,7 @@ class MeSeConverterPhilipsMagnitude(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_mese_philips(med_volume):
+        if not _is_mese_ge(med_volume):
             return False
 
         return _test_ima_type(med_volume, 'MAGNITUDE')
@@ -104,11 +104,11 @@ class MeSeConverterPhilipsMagnitude(Converter):
         return med_volume_out
 
 
-class MeSeConverterPhilipsPhase(Converter):
+class MeSeConverterGEPhase(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MESE_Philips_Phase'
+        return 'MESE_GE_Phase'
 
     @classmethod
     def get_directory(cls):
@@ -120,7 +120,7 @@ class MeSeConverterPhilipsPhase(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_mese_philips(med_volume):
+        if not _is_mese_ge(med_volume):
             return False
 
         return _test_ima_type(med_volume, 'PHASE')
@@ -136,11 +136,11 @@ class MeSeConverterPhilipsPhase(Converter):
         return med_volume_out
 
 
-class MeSeConverterPhilipsReconstructedMap(Converter):
+class MeSeConverterGEReconstructedMap(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MESE_Philips_ReconstructedT2'
+        return 'MESE_GE_ReconstructedT2'
 
     @classmethod
     def get_directory(cls):
@@ -152,7 +152,7 @@ class MeSeConverterPhilipsReconstructedMap(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'PHILIPS' not in get_manufacturer(med_volume):
+        if 'GE' not in get_manufacturer(med_volume):
             return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 

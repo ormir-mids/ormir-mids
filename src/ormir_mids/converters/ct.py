@@ -1,7 +1,7 @@
 import os
 
 from .abstract_converter import Converter
-from ..dosma_io import MedicalVolume
+from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_modality
 
 
@@ -70,7 +70,7 @@ class CTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'rx'
+        return 'ct-edi'
 
     @classmethod
     def get_file_name(cls, subject_id: str):
@@ -88,8 +88,8 @@ class CTConverter(Converter):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['ct'])
 
-        med_volume_out.bids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume_out.bids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+        med_volume_out.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume_out.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
         return med_volume_out
 
@@ -102,7 +102,7 @@ class PCCTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'rx'
+        return 'ct-pc'
 
     @classmethod
     def get_file_name(cls, subject_id: str):
@@ -120,7 +120,7 @@ class PCCTConverter(Converter):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['pcct'])
 
-        med_volume_out.bids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume_out.bids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+        med_volume_out.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume_out.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
         return med_volume_out

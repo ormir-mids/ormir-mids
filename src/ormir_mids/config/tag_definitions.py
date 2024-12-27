@@ -107,7 +107,9 @@ defined_tags = TagDefinitionDict({
     '00080070': 'Manufacturer',
     '00180084': 'ImagingFrequency',
     '00180087': 'MagneticFieldStrength',
-    '0043102F': 'ImageType',  # GE private tag for complex data type
+    '0043102F': 'ImageTypeGE',  # GE private tag for complex data type
+    '00089208': 'ImageTypePhilips',  # Philips tag for complex data type
+    '00080008': 'ImageTypeSiemens',  # General tag for image type (use for all? Needs to be parsed)
 
     # Tags for CT
     '00180060': 'XRayEnergy',
@@ -116,5 +118,7 @@ defined_tags = TagDefinitionDict({
     # Tags for CR
     '00181150': 'ExposureTime',
     '00181151': 'X-RayTubeCurrent'
+
+    #TODO: DC-3T - Add relevant tags for MEGRE-Philips/Siemens and MESE-GE
 
 })

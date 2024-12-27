@@ -2,11 +2,11 @@
 import os
 import sys
 
-from muscle_bids.dosma_io import MedicalVolume, DicomReader
-from muscle_bids.utils.headers import reduce, dicom_volume_to_bids, get_raw_tag_value
-from muscle_bids.utils.io import load_dicom, save_bids, load_bids, save_dicom
+from voxel import MedicalVolume, DicomReader
+from ormir_mids.utils.headers import reduce, dicom_volume_to_bids, get_raw_tag_value
+from ormir_mids.utils.io import load_dicom, save_bids, load_bids, save_dicom
 
-import muscle_bids.converters
+import ormir_mids.converters
 
 INPUT_FOLDER = 'C:\\Users\\francesco\\Desktop\\Data\\MESE_Anon'
 OUTPUT = 'C:\\Users\\francesco\\Desktop\\Data\\MESE_Nii\\test.nii.gz'
@@ -22,9 +22,9 @@ im_bids = dicom_volume_to_bids(im[0])
 
 print(im_bids.volume.shape)
 
-from muscle_bids.converters.mese_siemens import MeSeConverterSiemensMagnitude
+from ormir_mids.converters.mese_siemens import MeSeConverterSiemensMagnitude
 
-from muscle_bids.converters.mese_philips import MeSeConverterPhilipsMagnitude, MeSeConverterPhilipsPhase, MeSeConverterPhilipsReconstructedMap
+from ormir_mids.converters.mese_philips import MeSeConverterPhilipsMagnitude, MeSeConverterPhilipsPhase, MeSeConverterPhilipsReconstructedMap
 
 print(MeSeConverterSiemensMagnitude.is_dataset_compatible(im_bids))
 
@@ -42,7 +42,7 @@ for converter in converters:
 
 sys.exit(0)
 #
-print(muscle_bids.converters.MeSeConverterSiemensMagnitude.find(INPUT_FOLDER))
+print(ormir_mids.converters.MeSeConverterSiemensMagnitude.find(INPUT_FOLDER))
 
 
 med_volume = load_dicom(INPUT_FOLDER, 'EchoTime')

@@ -5,8 +5,7 @@
 - `pandas`
 - `pydicom`
 - `json`
-
-
+- 'ormir-pyvoxel'
 
 ### Optional dependencies
 - `SimpleITK`

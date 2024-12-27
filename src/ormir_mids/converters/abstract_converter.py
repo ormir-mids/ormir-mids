@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from ..dosma_io import MedicalVolume
+from voxel import MedicalVolume
 
 
 class Converter(ABC):
