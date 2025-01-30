@@ -4,11 +4,18 @@ from bidict import bidict
 
 
 def list_to_item(x):
-    return x[0]
+    if isinstance(x, list):
+        if isinstance(x[0], str):
+            return '/'.join(x)
+        else:
+            return x[0]
 
 
 def item_to_list(x):
-    return [x]
+    if isinstance(x, str):
+        return x.split('/')
+    else:
+        return [x]
 
 
 class TagDefinitionDict(dict):

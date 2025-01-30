@@ -39,8 +39,8 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
     multiseries_config = None
     multiseries_volumes = {}
 
-    if os.path.exists(os.path.join(inputDir + 'series_config.json')):
-        with open(inputDir + 'series_config.json') as json_file:
+    if os.path.exists(os.path.join(inputDir, 'series_config.json')):
+        with open(os.path.join(inputDir, 'series_config.json')) as json_file:
             multiseries_config = json.load(json_file)
         print("multiseries config loaded")
 

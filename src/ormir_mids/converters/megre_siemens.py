@@ -27,21 +27,24 @@ def _is_megre_siemens(med_volume: MedicalVolume):
 
 def _get_ima_type(med_volume):
     try:
-        ima_type_list = get_raw_tag_value(med_volume, '0043102F')
-        flat_ima_type = [x for xs in ima_type_list for x in xs]
+        ima_type_list = get_raw_tag_value(med_volume, '00080008')
+        if isinstance(ima_type_list, str):
+            flat_ima_type = ima_type_list.split('/')
+        else:
+            flat_ima_type = ima_type_list
     except KeyError:
         #probably enhanced dicom
         flat_ima_type = get_raw_tag_value(med_volume, '00089208')
 
-        for i in range(len(flat_ima_type)):
-            if flat_ima_type[i].startswith('M'):
-                flat_ima_type[i] = 0
-            elif flat_ima_type[i].startswith('P'):
-                flat_ima_type[i] = 1
-            elif flat_ima_type[i].startswith('R'):
-                flat_ima_type[i] = 2
-            elif flat_ima_type[i].startswith('I'):
-                flat_ima_type[i] = 3
+    for i in range(len(flat_ima_type)):
+        if flat_ima_type[i].startswith('M'):
+            flat_ima_type[i] = 0
+        elif flat_ima_type[i].startswith('P'):
+            flat_ima_type[i] = 1
+        elif flat_ima_type[i].startswith('R'):
+            flat_ima_type[i] = 2
+        elif flat_ima_type[i].startswith('I'):
+            flat_ima_type[i] = 3
     return flat_ima_type
 
 def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
@@ -148,6 +151,8 @@ class MeGreConverterSiemensMagnitude(Converter):
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
         if not _is_megre_siemens(med_volume):
             return False
+
+        print("Checking ima type", _test_ima_type(med_volume, 0))
 
         return _test_ima_type(med_volume, 0)
 

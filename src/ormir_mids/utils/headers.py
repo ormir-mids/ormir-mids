@@ -296,6 +296,7 @@ def separate_headers(raw_header_dict):
                     output_dict[named_key] = list(map(translator, original_content[value_tag]))
                 else:
                     output_dict[named_key] = translator(original_content[value_tag])
+
                 original_content[value_tag] = ''
             except KeyError:
                 pass # key has no value

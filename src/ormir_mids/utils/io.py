@@ -38,7 +38,10 @@ def load_dicom_with_subfolders(path):
     """
     dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', ignore_ext=True)
     def _read_dicom_recursive(rootdir):
-        output_list = dicom_reader.load(rootdir)
+        try:
+            output_list = dicom_reader.load(rootdir)
+        except (FileNotFoundError, KeyError):
+            output_list = []
         for element in output_list:
             setattr(element, 'path', rootdir)
         for file in os.listdir(rootdir):

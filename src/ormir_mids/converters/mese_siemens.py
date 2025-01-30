@@ -4,7 +4,6 @@ from .abstract_converter import Converter
 from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, get_manufacturer
 
-
 class MeSeConverterSiemensMagnitude(Converter):
 
     @classmethod
