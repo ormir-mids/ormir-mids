@@ -3,7 +3,7 @@
 import json
 import os
 import sys
-from .utils.headers import concatenate_volumes_3d, group
+from .utils.headers import concatenate_volumes_3d, group, get_raw_tag_value
 from .utils.io import load_dicom, save_bids, load_dicom_with_subfolders
 from .converters import converter_list
 import pathlib
@@ -26,8 +26,6 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
     outputDir = output_folder
     ANON_NAME = anonymize
     RECURSIVE = recursive
-    multiseries_config = None
-    multiseries_flag = False
     concat_flag = False
     concat_list = []
 
@@ -35,6 +33,8 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
         med_volume_list = load_dicom_with_subfolders(inputDir)
     else:
         med_volume_list = [load_dicom(inputDir)]
+
+    print("Data loaded")
 
     multiseries_config = None
     multiseries_volumes = {}
@@ -67,12 +67,16 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                         multiseries_finished = None
                     break # don't search for other groups
         for converter_class in converter_list:
-            if multiseries_part == converter_class.is_multiseries() and \
-                    converter_class.is_dataset_compatible(med_volume):
+            try:
+                compatible_dataset = converter_class.is_dataset_compatible(med_volume)
+            except Exception as e:
+                compatible_dataset = False
+            if multiseries_part == converter_class.is_multiseries() and compatible_dataset:
                 print('Volume compatible with', converter_class.get_name())
                 output_path = pathlib.Path(outputDir) / converter_class.get_directory()
                 output_path.mkdir(parents=True, exist_ok=True)
                 converted_volume = converter_class.convert_dataset(med_volume)
+                print("Converted volume echo time", converted_volume.omids_header['EchoTime'])
                 if ANON_NAME:
                     patient_name = ANON_NAME
                 else:
@@ -81,6 +85,8 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                     if multiseries_finished is not None:
                         # a multiseries is finished, we can concatenate
                         concat_volume_4d = concatenate_volumes_3d(multiseries_volumes[series_group_name])
+                        for volume in multiseries_volumes[series_group_name]:
+                            print("Echo time", volume.omids_header['EchoTime'], "Shape", volume.shape, volume.omids_header['ImageTypeSiemens'])
                         converted_multiseries_volume = group(concat_volume_4d, converter_class.multiseries_concat_tag())
                         save_bids(str(output_path / converter_class.get_file_name(patient_name)) + '.nii.gz',
                                   converted_multiseries_volume)

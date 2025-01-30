@@ -28,23 +28,27 @@ def _is_megre_siemens(med_volume: MedicalVolume):
 def _get_ima_type(med_volume):
     try:
         ima_type_list = get_raw_tag_value(med_volume, '00080008')
-        if isinstance(ima_type_list, str):
-            flat_ima_type = ima_type_list.split('/')
+        if isinstance(ima_type_list[0], str):
+            flat_ima_type = ['/'.join(ima_type_list)]
         else:
             flat_ima_type = ima_type_list
     except KeyError:
         #probably enhanced dicom
         flat_ima_type = get_raw_tag_value(med_volume, '00089208')
 
+    print("Flat ima type", flat_ima_type)
+
     for i in range(len(flat_ima_type)):
-        if flat_ima_type[i].startswith('M'):
+        if flat_ima_type[i].startswith('M') or '/M' in flat_ima_type[i]:
             flat_ima_type[i] = 0
-        elif flat_ima_type[i].startswith('P'):
+        elif flat_ima_type[i].startswith('P') or '/P' in flat_ima_type[i]:
             flat_ima_type[i] = 1
-        elif flat_ima_type[i].startswith('R'):
+        elif flat_ima_type[i].startswith('R') or '/R' in flat_ima_type[i]:
             flat_ima_type[i] = 2
-        elif flat_ima_type[i].startswith('I'):
+        elif flat_ima_type[i].startswith('I') or '/I' in flat_ima_type[i]:
             flat_ima_type[i] = 3
+
+    print("Flat ima type", flat_ima_type)
     return flat_ima_type
 
 def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
@@ -152,13 +156,21 @@ class MeGreConverterSiemensMagnitude(Converter):
         if not _is_megre_siemens(med_volume):
             return False
 
-        print("Checking ima type", _test_ima_type(med_volume, 0))
-
         return _test_ima_type(med_volume, 0)
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
+        print("Indices", indices)
+        print("Echo times", med_volume.omids_header['EchoTime'])
+        image_comment = get_raw_tag_value(med_volume, '00204000')
+        if isinstance(image_comment, list):
+            image_comment = image_comment[0]
+        print("Image comment", image_comment)
+        if image_comment.startswith('TE [ms]:'):
+            echo_time = float(image_comment[len('TE [ms]:'):])
+            med_volume.omids_header['EchoTime'] = echo_time
+            print("Echo time", echo_time)
         med_volume_out = slice_volume_3d(med_volume, indices['magnitude'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -166,6 +178,7 @@ class MeGreConverterSiemensMagnitude(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'magnitude')
+        print(echo_times_nu)
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 

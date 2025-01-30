@@ -30,22 +30,27 @@ class TagDefinitionDict(dict):
 
     @staticmethod
     def __add_item(dictionary, source_tag, dest_tag):
+        def __set_or_append(dictionary, source_tag, dest_tag):
+            if source_tag in dictionary:
+                if isinstance(dictionary[source_tag], list):
+                    dictionary[source_tag].append(dest_tag)
+                else:
+                    dictionary[source_tag] = [dictionary[source_tag], dest_tag]
+            else:
+                dictionary[source_tag] = dest_tag
+
+
         if isinstance(source_tag, (list, tuple)):
             for tag in source_tag:
                 if isinstance(dest_tag, (list, tuple)):
-                    dictionary[tag] = dest_tag[0]
+                    __set_or_append(dictionary, tag, dest_tag[0])
                 else:
-                    dictionary[tag] = dest_tag
-            else:
-                if isinstance(dest_tag, (list, tuple)):
-                    dictionary[source_tag] = dest_tag[0]
-                else:
-                    dictionary[source_tag] = dest_tag
+                    __set_or_append(dictionary, tag, dest_tag)
         else:
             if isinstance(dest_tag, (list, tuple)):
-                dictionary[source_tag] = dest_tag[0]
+                __set_or_append(dictionary, source_tag, dest_tag[0])
             else:
-                dictionary[source_tag] = dest_tag
+                __set_or_append(dictionary, source_tag, dest_tag)
 
     def add_element(self, numerical_tag, named_tag, numerical_to_named_translator=list_to_item,
                     named_to_numerical_translator=item_to_list):
@@ -69,7 +74,10 @@ class TagDefinitionDict(dict):
         self.__add_item(self.translator_dict, tag, translator)
 
     def get_translator(self, tag):
-        return self.translator_dict[tag]
+        translator = self.translator_dict[tag]
+        if isinstance(translator, list):
+            return translator[0]
+        return translator
 
 
 patient_tags = TagDefinitionDict({
@@ -120,6 +128,7 @@ defined_tags = TagDefinitionDict({
     '0043102F': 'ImageTypeGE',  # GE private tag for complex data type
     '00089208': 'ImageTypePhilips',  # Philips tag for complex data type
     '00080008': 'ImageTypeSiemens',  # General tag for image type (use for all? Needs to be parsed)
+    '00181312': 'PhaseEncodingDirection',
 
     # Tags for CT
     '00180060': 'XRayEnergy',

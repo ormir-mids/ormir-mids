@@ -309,9 +309,7 @@ def separate_headers(raw_header_dict):
 
     # in-plane phase encoding direction - recommended by BIDS
     # TODO: fix correct polarity
-    pe_element = raw_header_dict['00181312']
-    value_tag = _get_value_tag(pe_element)
-    pe_value = pe_element[value_tag][0]
+    pe_value = bids_dict['PhaseEncodingDirection']
     if pe_value == 'ROW':
         bids_dict['PhaseEncodingDirection'] = 'j'
     else:
@@ -339,10 +337,26 @@ def remerge_headers(bids_dict, patient_dict, raw_header_dict):
             except KeyError:
                 print("Warning: unknown tag", named_key)
                 continue
-            try:
-                original_content = raw_header_dict[numerical_key]
-            except KeyError:
-                print("Warning: tag not in header", named_key)
+
+            found = False
+            original_content = None
+            if isinstance(numerical_key, list):
+                for key_to_test in numerical_key:
+                    try:
+                        original_content = raw_header_dict[key_to_test]
+                        numerical_key = key_to_test
+                        found = True
+                        break
+                    except KeyError:
+                        continue
+            else:
+                try:
+                    original_content = raw_header_dict[numerical_key]
+                    found = True
+                except KeyError:
+                    continue
+            if not found:
+                print("Warning: tag not found", named_key, numerical_key)
                 continue
             value_tag = _get_value_tag(original_content)
             translator = tag_dict.get_translator(named_key)
