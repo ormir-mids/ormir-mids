@@ -4,7 +4,7 @@ import json
 import os
 import sys
 from .utils.headers import concatenate_volumes_3d, group, get_raw_tag_value
-from .utils.io import load_dicom, save_bids, load_dicom_with_subfolders
+from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders
 from .converters import converter_list
 import pathlib
 
@@ -50,7 +50,7 @@ def parse_list_expression(list_expression):
 
 
 
-def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, series_number=False):
+def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, series_number=False, save_patient_json=True, save_extra_json=True):
     """
     Convert DICOM to ORMIR-MIDS format.
     
@@ -196,14 +196,14 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                             first_series = min([get_raw_tag_value(x, '00200011')[0] for x in multiseries_volumes[series_group_name]])
                             series_prefix = f'{first_series:03d}_'
 
-                        save_bids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
-                                  converted_multiseries_volume)
+                        save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
+                                  converted_multiseries_volume, save_patient_json, save_extra_json)
                         print('Volume saved')
                     continue
                 series_prefix = ''
                 if ADD_SERIES_NUMBER:
                     series_prefix = f'{get_raw_tag_value(med_volume, '00200011')[0]:03d}_'
-                save_bids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz', converted_volume)
+                save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz', converted_volume, save_patient_json, save_extra_json)
                 print('Volume saved')
 
 
@@ -216,6 +216,8 @@ def main():
     parser.add_argument('--anonymize', '-a', const='anon', metavar='pseudo_name', dest='anonymize', type=str, nargs = '?', help='Use the pseudo_name (default: anon) as patient name')
     parser.add_argument('--recursive', '-r', action='store_true', help='Recurse into subfolders')
     parser.add_argument('--series-number', '-s', action='store_true', help='Add series number to file name')
+    parser.add_argument('--disable-patient-json', '-p', action='store_true', help='Avoid saving patient json file')
+    parser.add_argument('--disable-extra-json', '-e', action='store_true', help='Avoid saving extra json file')
 
     args = parser.parse_args()
 
@@ -224,7 +226,7 @@ def main():
     ANON_NAME = args.anonymize
     RECURSIVE = args.recursive
     ADD_SERIES_NUMBER = args.series_number
-    convert_dicom_to_ormirmids(inputDir, outputDir, ANON_NAME, RECURSIVE, ADD_SERIES_NUMBER)
+    convert_dicom_to_ormirmids(inputDir, outputDir, ANON_NAME, RECURSIVE, ADD_SERIES_NUMBER, not args.disable_patient_json, not args.disable_extra_json)
 
 
 # if __name__ == "__main__":

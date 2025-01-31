@@ -31,8 +31,9 @@ class MeSeConverterSiemensMagnitude(Converter):
         scanning_sequence = get_raw_tag_value(med_volume, '00180020')[0]
         echo_train_length = get_raw_tag_value(med_volume, '00180091')[0]
         # echo_times = get_raw_tag_value(med_volume, 'EchoTime')
+        n_echo_times = len(med_volume.omids_header['EchoTime'])
 
-        if scanning_sequence == 'SE' and echo_train_length > 1: #maybe scanning_sequence is Siemens-specific?
+        if scanning_sequence == 'SE' and n_echo_times > 1: #maybe scanning_sequence is Siemens-specific?
             return True
 
         return False

@@ -52,7 +52,15 @@ def load_dicom_with_subfolders(path):
         return output_list
 
     med_volumes = _read_dicom_recursive(path)
-    return [ headers.dicom_volume_to_bids(volume) for volume in med_volumes ]
+    out = []
+    for volume in med_volumes:
+        try:
+            new_volume = headers.dicom_volume_to_bids(volume)
+        except:
+            print("Warning: could not convert volume")
+            continue
+        out.append(new_volume)
+    return out
 
 
 def save_dicom(path, medical_volume, new_series = True):
@@ -120,7 +128,7 @@ def load_omids(nii_file):
     return medical_volume
 
 
-def save_omids(nii_file, medical_volume):
+def save_omids(nii_file, medical_volume, save_patient_json=True, save_extra_json=True):
     """
     Saves a volume to a nifti file and its corresponding json files.
 
@@ -151,11 +159,13 @@ def save_omids(nii_file, medical_volume):
     with open(json_base_name + '.json', 'w') as f:
         json.dump(omids_header, f, indent=2)
 
-    with open(json_base_name + '_patient.json', 'w') as f:
-        json.dump(patient_header, f, indent=2)
+    if save_patient_json:
+        with open(json_base_name + '_patient.json', 'w') as f:
+            json.dump(patient_header, f, indent=2)
 
-    with open(json_base_name + '_extra.json', 'w') as f:
-        json.dump(extra_and_meta_header, f, indent=2)
+    if save_extra_json:
+        with open(json_base_name + '_extra.json', 'w') as f:
+            json.dump(extra_and_meta_header, f, indent=2)
 
 save_bids = save_omids
 
