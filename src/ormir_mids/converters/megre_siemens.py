@@ -29,14 +29,15 @@ def _is_megre_siemens(med_volume: MedicalVolume):
 
 def _get_ima_type(med_volume):
     try:
+        # this is defined in the newer version of SIEMENS DICOMS and in Philips DICOMs
+        flat_ima_type = get_raw_tag_value(med_volume, '00089208')
+    except KeyError:
         ima_type_list = get_raw_tag_value(med_volume, '00080008')
         if isinstance(ima_type_list[0], str):
             flat_ima_type = ['/'.join(ima_type_list)]
         else:
             flat_ima_type = ima_type_list
-    except KeyError:
-        #probably enhanced dicom
-        flat_ima_type = get_raw_tag_value(med_volume, '00089208')
+
 
     for i in range(len(flat_ima_type)):
         if flat_ima_type[i].startswith('M') or '/M' in flat_ima_type[i]:
@@ -180,6 +181,14 @@ class MeGreConverterSiemensMagnitude(Converter):
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
+        if 'ImageTypePhilips' in med_volume.omids_header:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypeSiemens']
+        else:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypeSiemens']
+            del med_volume_out.omids_header['ImageTypeSiemens']
+
         return med_volume_out
 
 
@@ -224,6 +233,12 @@ class MeGreConverterSiemensPhase(Converter):
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
         med_volume_out.volume = (med_volume_out.volume - 2048).astype(np.float32) * np.pi / 2048
+        if 'ImageTypePhilips' in med_volume.omids_header:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypeSiemens']
+        else:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypeSiemens']
 
         return med_volume_out
 
@@ -268,6 +283,12 @@ class MeGreConverterSiemensReal(Converter):
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+        if 'ImageTypePhilips' in med_volume.omids_header:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypeSiemens']
+        else:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypeSiemens']
 
         return med_volume_out
 
@@ -311,6 +332,12 @@ class MeGreConverterSiemensImaginary(Converter):
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+        if 'ImageTypePhilips' in med_volume.omids_header:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypePhilips']
+            del med_volume_out.omids_header['ImageTypeSiemens']
+        else:
+            med_volume_out.omids_header['ImageType'] = med_volume.omids_header['ImageTypeSiemens']
 
         return med_volume_out
 

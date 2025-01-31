@@ -24,16 +24,23 @@ class MeSeConverterSiemensMagnitude(Converter):
             return False
 
         # check if magnitude
+        try:
+            image_type = get_raw_tag_value(med_volume, '00089208')[0] # this is defined in newer versions
+            print(image_type)
+            if image_type[0] != 'M':
+                return False
+        except:
+            pass
         if 'M' not in get_raw_tag_value(med_volume, '00080008'):
             return False
 
 
         scanning_sequence = get_raw_tag_value(med_volume, '00180020')[0]
-        echo_train_length = get_raw_tag_value(med_volume, '00180091')[0]
+        print(scanning_sequence)
         # echo_times = get_raw_tag_value(med_volume, 'EchoTime')
         n_echo_times = len(med_volume.omids_header['EchoTime'])
 
-        if scanning_sequence == 'SE' and n_echo_times > 1: #maybe scanning_sequence is Siemens-specific?
+        if (scanning_sequence == 'SE' or scanning_sequence == 'SPIN') and n_echo_times > 1: #maybe scanning_sequence is Siemens-specific?
             return True
 
         return False
