@@ -1,5 +1,7 @@
 import os
 
+import numpy as np
+
 from .abstract_converter import Converter
 from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
@@ -36,8 +38,6 @@ def _get_ima_type(med_volume):
         #probably enhanced dicom
         flat_ima_type = get_raw_tag_value(med_volume, '00089208')
 
-    print("Flat ima type", flat_ima_type)
-
     for i in range(len(flat_ima_type)):
         if flat_ima_type[i].startswith('M') or '/M' in flat_ima_type[i]:
             flat_ima_type[i] = 0
@@ -48,7 +48,6 @@ def _get_ima_type(med_volume):
         elif flat_ima_type[i].startswith('I') or '/I' in flat_ima_type[i]:
             flat_ima_type[i] = 3
 
-    print("Flat ima type", flat_ima_type)
     return flat_ima_type
 
 def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
@@ -161,16 +160,13 @@ class MeGreConverterSiemensMagnitude(Converter):
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
-        print("Indices", indices)
-        print("Echo times", med_volume.omids_header['EchoTime'])
+
         image_comment = get_raw_tag_value(med_volume, '00204000')
         if isinstance(image_comment, list):
             image_comment = image_comment[0]
-        print("Image comment", image_comment)
         if image_comment.startswith('TE [ms]:'):
             echo_time = float(image_comment[len('TE [ms]:'):])
             med_volume.omids_header['EchoTime'] = echo_time
-            print("Echo time", echo_time)
         med_volume_out = slice_volume_3d(med_volume, indices['magnitude'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -178,7 +174,6 @@ class MeGreConverterSiemensMagnitude(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'magnitude')
-        print(echo_times_nu)
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
@@ -227,6 +222,8 @@ class MeGreConverterSiemensPhase(Converter):
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+
+        med_volume_out.volume = (med_volume_out.volume - 2048).astype(np.float32) * np.pi / 2048
 
         return med_volume_out
 

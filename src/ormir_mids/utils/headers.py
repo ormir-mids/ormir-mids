@@ -517,7 +517,14 @@ def group(medical_volume, key):
         indices_dict[real_value].append(index)
 
     array_stack = []
-    for index_list in indices_dict.values():
+
+    try:
+        items = sorted(indices_dict.items())
+    except TypeError:
+        print('Warning: could not sort indices_dict')
+        items = indices_dict.items()
+
+    for _,index_list in items:
         array_stack.append(medical_volume.volume[:, :, index_list])
 
     new_volume = np.stack(array_stack, axis=3)
@@ -548,7 +555,7 @@ def group(medical_volume, key):
 
 
     medical_volume_out.omids_header['FourthDimension'] = key
-    medical_volume_out.omids_header[key] = list(indices_dict.keys())  # only keep the different values
+    medical_volume_out.omids_header[key] = [i[0] for i in items]  # only keep the different values
     group_tags(medical_volume_out.extra_header)
     group_tags(medical_volume_out.meta_header)
 
