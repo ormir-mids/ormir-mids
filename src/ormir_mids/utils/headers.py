@@ -147,8 +147,10 @@ def headers_to_dicts(header_list):
     json_header_list = []
     for h in header_list:
         meta_header = h.file_meta.to_json_dict()
-        meta_header['is_little_endian'] = h.is_little_endian
-        meta_header['is_implicit_VR'] = h.is_implicit_VR
+        # the following should already be in the json dict
+        #meta_header['is_little_endian'] = h.is_little_endian
+        #meta_header['is_implicit_VR'] = h.is_implicit_VR
+
         json_header_list.append({'meta': meta_header, 'header': h.to_json_dict()})
 
     # compress json header list
@@ -233,21 +235,8 @@ def dicts_to_headers(n_slices, compressed_header, compressed_meta = None):
         # ensure file meta
         if compressed_meta is not None:
             new_meta_dict = {}
-            is_little_endian = True
-            is_implicit_VR = False
             for key, element in compressed_meta.items():
-                if key == 'is_little_endian':
-                    if type(element) == list:
-                        is_little_endian = element[i]
-                    else:
-                        is_little_endian = element
-                    continue
-                if key == 'is_implicit_VR':
-                    if type(element) == list:
-                        is_implicit_VR = element[i]
-                    else:
-                        is_implicit_VR = element
-                    continue
+
                 new_meta_dict[key] = copy.deepcopy(element)
                 if 'isList' in element:
                     value_tag = _get_value_tag(element)
@@ -256,13 +245,10 @@ def dicts_to_headers(n_slices, compressed_header, compressed_meta = None):
 
             new_meta = pydicom.dataset.FileMetaDataset.from_json(new_meta_dict)
             new_header.file_meta = new_meta
-            new_header.is_little_endian = is_little_endian
-            new_header.is_implicit_VR = is_implicit_VR
             new_header.ensure_file_meta()
         else:
             new_meta = pydicom.dataset.FileMetaDataset()
-            new_header.is_little_endian = True
-            new_header.is_implicit_VR = False
+            new_meta.TransferSyntaxUID = '1.2.840.10008.1.2.1'
             new_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.4'
             new_header.file_meta = new_meta
 
