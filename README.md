@@ -7,7 +7,7 @@ I/O of Medical Image Data Structure (MIDS) for Open and Reproducible Musculoskel
 [![GitHub license](https://img.shields.io/github/license/ormir-mids/ormir-mids)](https://github.com/ormir-mids/ormir-mids/blob/main/LICENSE)
 
 ## Tutorial
-Run the tutorial on Binder &nbsp;&nbsp; [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ormir-mids/ormir-mids.git/main?labpath=jupyter%2Formir-mids-qmski24.ipynb)   
+Run the tutorial on Binder &nbsp;&nbsp; [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ormir-mids/ormir-mids/HEAD?urlpath=%2Fdoc%2Ftree%2Fjupyter%2Formir-mids-dcm2omids.ipynb)  
 Run the tutorial on Colab  &nbsp;&nbsp;&nbsp; [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/muscle-bids/muscle-bids/blob/main/jupyter/Muscle-bids_dcm2mbids.ipynb)
 
 ## Main contributors
