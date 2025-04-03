@@ -29,17 +29,17 @@ def _is_megre_siemens(med_volume: MedicalVolume):
     return False
 
 
-def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
+def _test_ima_type(med_volume: MedicalVolume, ima_type: str):
     """
     Test if the given MedicalVolume is of the given type.
     Args:
         med_volume (MedicalVolume): The MedicalVolume to test.
-        ima_type (str): The type to test, e.g. "MAGNITUDE", "PHASE"
+        ima_type (str): The type to test, e.g. "M", "P"
 
     Returns:
         bool: True if the MedicalVolume is of the given type, False otherwise.
     """
-    ima_type_list = get_raw_tag_value(med_volume, '0043102F')
+    ima_type_list = get_raw_tag_value(med_volume, '00080008')
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
     if ima_type in flat_ima_type:
@@ -80,22 +80,22 @@ def _get_image_indices(med_volume: MedicalVolume):
                  'imaginary': []
                  }
 
-    ima_type_list = get_raw_tag_value(med_volume, '0043102F')
+    ima_type_list = get_raw_tag_value(med_volume, '00080008')
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
     # DCam - Code below causes errors? Enhanced DICOM?
-    # if ~isinstance(scanning_sequence_list, list):
-        # scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
+    if ~isinstance(scanning_sequence_list, list):
+        scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
 
     for i in range(len(flat_ima_type)):
-        if flat_ima_type[i] == 0 and scanning_sequence_list[i] == 'GR':
+        if flat_ima_type[i] == 'M' and scanning_sequence_list[i] == 'GR':
             ima_index['magnitude'].append(i)
-        elif flat_ima_type[i] == 1 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 'P' and scanning_sequence_list[i] == 'GR':
             ima_index['phase'].append(i)
-        elif flat_ima_type[i] == 2 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 'R' and scanning_sequence_list[i] == 'GR':
             ima_index['real'].append(i)
-        elif flat_ima_type[i] == 3 and scanning_sequence_list[i] == 'GR':
+        elif flat_ima_type[i] == 'I' and scanning_sequence_list[i] == 'GR':
             ima_index['imaginary'].append(i)
         elif scanning_sequence_list[i] == 'RM':
             ima_index['reco'].append(i)
@@ -122,7 +122,7 @@ class MeGreConverterSiemensMagnitude(Converter):
         if not _is_megre_siemens(med_volume):
             return False
 
-        return _test_ima_type(med_volume, 0)
+        return _test_ima_type(med_volume, 'M')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -162,7 +162,7 @@ class MeGreConverterSiemensPhase(Converter):
         if not _is_megre_siemens(med_volume):
             return False
 
-        return _test_ima_type(med_volume, 1)
+        return _test_ima_type(med_volume, 'P')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -201,7 +201,7 @@ class MeGreConverterSiemensReal(Converter):
         if not _is_megre_siemens(med_volume):
             return False
 
-        return _test_ima_type(med_volume, 2)
+        return _test_ima_type(med_volume, 'R')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -240,7 +240,7 @@ class MeGreConverterSiemensImaginary(Converter):
         if not _is_megre_siemens(med_volume):
             return False
 
-        return _test_ima_type(med_volume, 3)
+        return _test_ima_type(med_volume, 'I')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
