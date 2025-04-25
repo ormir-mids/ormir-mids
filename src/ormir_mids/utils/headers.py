@@ -1,6 +1,7 @@
 import copy
 import itertools
 import operator
+import sys
 from collections import OrderedDict
 
 import numpy as np
@@ -48,7 +49,7 @@ def copy_headers(medical_volume_src, medical_volume_dest):
     setattr(medical_volume_dest, 'bids_header', getattr(medical_volume_dest, 'omids_header')) # for compatibility
 
 
-def get_raw_tag_value(med_volume, tag, alternative_tag=None):
+def get_raw_tag_value(med_volume, tag, alternative_tag=None, force_raw=False):
     """
     Gets the value of a tag, regardless of its location in the header. A tag is always defined
     by its DICOM tag number.
@@ -57,43 +58,45 @@ def get_raw_tag_value(med_volume, tag, alternative_tag=None):
         med_volume (MedicalVolume): the volume to get the tag from
         tag (str): the DICOM tag identifier
         alternative_tag (str, optional): an alternative tag to use if the first one is not found
+        force_raw (bool, optional): if True, the tag is always treated as a raw tag, don't try to get it from the standard header
 
     Returns:
         (Any): the value of the tag
     """
-    if tag in defined_tags:
-        # tag is named
-        named_tag = defined_tags[tag]
-        if isinstance(named_tag, list):
-            # tag is a list of tags. Find out what tag it actually is stored
-            for t in named_tag[:]:
-                if t in med_volume.omids_header:
-                    named_tag = t
-                    break
-        try:
-            if isinstance(med_volume.omids_header[named_tag], list):
-                return list(map(defined_tags.get_translator(named_tag), med_volume.omids_header[named_tag]))
-            else:
-                return defined_tags.get_translator(named_tag)(med_volume.omids_header[named_tag])
-        except KeyError as e:
-            if alternative_tag:
-                return get_raw_tag_value(med_volume, alternative_tag)
-            else:
-                raise e
+    if not force_raw:
+        if tag in defined_tags:
+            # tag is named
+            named_tag = defined_tags[tag]
+            if isinstance(named_tag, list):
+                # tag is a list of tags. Find out what tag it actually is stored
+                for t in named_tag[:]:
+                    if t in med_volume.omids_header:
+                        named_tag = t
+                        break
+            try:
+                if isinstance(med_volume.omids_header[named_tag], list):
+                    return list(map(defined_tags.get_translator(named_tag), med_volume.omids_header[named_tag]))
+                else:
+                    return defined_tags.get_translator(named_tag)(med_volume.omids_header[named_tag])
+            except KeyError as e:
+                if alternative_tag:
+                    return get_raw_tag_value(med_volume, alternative_tag)
+                else:
+                    raise e
 
-    if tag in patient_tags:
-        # tag is named
-        named_tag = patient_tags[tag]
-        if isinstance(named_tag, list):
-            # tag is a list of tags. Find out what tag it actually is stored
-            for t in named_tag[:]:
-                if t in med_volume.patient_header:
-                    named_tag = t
-                    break
-        if 'isList' in med_volume.patient_header[named_tag]:
-            return list(map(patient_tags.get_translator(named_tag), med_volume.patient_header[named_tag]))
-        else:
-            return patient_tags.get_translator(named_tag)(med_volume.patient_header[named_tag])
+        if tag in patient_tags:
+            # tag is named
+            named_tag = patient_tags[tag]
+            if isinstance(named_tag, list):
+                # tag is a list of tags. Find out what tag it actually is stored
+                for t in named_tag[:]:
+                    if t in med_volume.patient_header:
+                        named_tag = t
+                        break
+            if 'isList' in med_volume.patient_header[named_tag]:
+                return list(map(patient_tags.get_translator(named_tag), med_volume.patient_header[named_tag]))
+            else:
+                return patient_tags.get_translator(named_tag)(med_volume.patient_header[named_tag])
 
     # tag is numeric
     value_tag = _get_value_tag(med_volume.extra_header[tag])
@@ -268,7 +271,7 @@ def separate_headers(raw_header_dict):
         (dict, dict, dict): the three dictionaries (bids, patient, raw)
     """
 
-    def process_dict(output_dict, tag_dict):
+    def process_dict(output_dict, tag_dict, remove=False):
         for numerical_key, named_key in tag_dict.items():
             try:
                 original_content = raw_header_dict[numerical_key]
@@ -283,13 +286,14 @@ def separate_headers(raw_header_dict):
                 else:
                     output_dict[named_key] = translator(original_content[value_tag])
 
-                original_content[value_tag] = ''
+                if remove:
+                    original_content[value_tag] = '' # do not remove the original content
             except KeyError:
                 pass # key has no value
 
 
     patient_dict = {}
-    process_dict(patient_dict, patient_tags)
+    process_dict(patient_dict, patient_tags, remove=True)
     bids_dict = {}
     process_dict(bids_dict, defined_tags)
 
@@ -352,7 +356,7 @@ def remerge_headers(bids_dict, patient_dict, raw_header_dict):
             else:
                 original_content[value_tag] = translator(value)
 
-    process_dict(bids_dict, defined_tags)
+    #process_dict(bids_dict, defined_tags)
     process_dict(patient_dict, patient_tags)
 
     return raw_header_dict
@@ -382,7 +386,12 @@ def slice_volume_3d(medical_volume, slices_list):
             value_tag = _get_value_tag(value)
             new_value_list = []
             for sl in slices_list:
-                new_value_list.append(value[value_tag][sl])
+                try:
+                    new_value_list.append(value[value_tag][sl])
+                except IndexError:
+                    print(value)
+                    print(value_tag)
+                    sys.exit(-1)
             if _list_all_equal(new_value_list):
                 new_value[value_tag] = new_value_list[0]
                 del new_value['isList']

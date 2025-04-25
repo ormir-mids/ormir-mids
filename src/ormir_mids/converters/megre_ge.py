@@ -3,6 +3,10 @@ import os
 from .abstract_converter import Converter
 from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
+import numpy as np
+
+def get_raw_scanning_sequence(med_volume: MedicalVolume):
+    return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
 
 
 def _is_megre_ge(med_volume: MedicalVolume):
@@ -20,6 +24,8 @@ def _is_megre_ge(med_volume: MedicalVolume):
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
     echo_times_list = med_volume.omids_header['EchoTime']
     echo_times_unique = set(echo_times_list)
+    print(echo_times_unique)
+    print(scanning_sequence_list)
     n_echo_times = sum(TE > 0. for TE in echo_times_unique)
 
     if n_echo_times > 1 and 'GR' in scanning_sequence_list:
@@ -82,7 +88,7 @@ def _get_image_indices(med_volume: MedicalVolume):
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
-    if ~isinstance(scanning_sequence_list, list):
+    if not isinstance(scanning_sequence_list, list):
         scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
 
     for i in range(len(flat_ima_type)):
