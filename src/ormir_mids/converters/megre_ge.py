@@ -24,8 +24,6 @@ def _is_megre_ge(med_volume: MedicalVolume):
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
     echo_times_list = med_volume.omids_header['EchoTime']
     echo_times_unique = set(echo_times_list)
-    print(echo_times_unique)
-    print(scanning_sequence_list)
     n_echo_times = sum(TE > 0. for TE in echo_times_unique)
 
     if n_echo_times > 1 and 'GR' in scanning_sequence_list:
