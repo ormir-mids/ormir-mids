@@ -202,7 +202,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                     continue
                 series_prefix = ''
                 if ADD_SERIES_NUMBER:
-                    series_prefix = f'{get_raw_tag_value(med_volume, '00200011')[0]:03d}_'
+                    series_prefix = f'{get_raw_tag_value(med_volume, "00200011")[0]:03d}_'
                 save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz', converted_volume, save_patient_json, save_extra_json)
                 print('Volume saved')
 
