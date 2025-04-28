@@ -14,4 +14,4 @@ from .utils.io import load_dicom, save_bids, load_dicom_with_subfolders, save_di
 
 __all__ = ['load_dicom', 'save_bids', 'load_dicom_with_subfolders', 'save_dicom', 'find_omids']
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
