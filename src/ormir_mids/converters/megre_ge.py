@@ -1,7 +1,7 @@
 import os
 
 from .abstract_converter import Converter
-from voxel import MedicalVolume
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 import numpy as np
 

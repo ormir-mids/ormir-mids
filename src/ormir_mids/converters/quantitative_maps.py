@@ -2,7 +2,7 @@ import os
 from abc import abstractmethod
 
 from .abstract_converter import Converter
-from voxel import MedicalVolume
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, reduce, copy_volume_with_omids_headers
 
 

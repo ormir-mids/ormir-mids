@@ -9,7 +9,8 @@ import pydicom.dataset
 from pydicom.uid import generate_uid
 
 from ..config.tag_definitions import defined_tags, patient_tags
-from voxel import MedicalVolume
+from .OMidsMedVolume import OMidsMedVolume as MedicalVolume
+from .OMidsMedVolume import copy_headers
 
 from itertools import groupby
 
@@ -32,22 +33,6 @@ def _get_value_tag(element):
     if 'BulkDataURI' in element: value_tag = 'BulkDataURI'
     if 'Alphabetic' in element: value_tag = 'Alphabetic'
     return value_tag
-
-
-def copy_headers(medical_volume_src, medical_volume_dest):
-    """ Copies the headers from one volume to another
-
-    Parameters:
-        medical_volume_src (MedicalVolume): the source volume
-        medical_volume_dest (MedicalVolume): the destination volume
-
-    Returns:
-        No return value
-    """
-    for header in ['omids_header', 'meta_header', 'patient_header', 'extra_header']:
-        setattr(medical_volume_dest, header, copy.deepcopy(getattr(medical_volume_src, header, None)))
-    setattr(medical_volume_dest, 'bids_header', getattr(medical_volume_dest, 'omids_header')) # for compatibility
-
 
 def get_raw_tag_value(med_volume, tag, alternative_tag=None, force_raw=False):
     """
