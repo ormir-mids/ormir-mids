@@ -6,7 +6,8 @@ from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manuf
 import numpy as np
 
 def get_raw_scanning_sequence(med_volume: MedicalVolume):
-    return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
+    return [v[0] for v in get_raw_tag_value(med_volume, '00180020',
+                                            force_raw=True)]
 
 
 def _is_megre_ge(med_volume: MedicalVolume):
@@ -74,7 +75,8 @@ def _get_image_indices(med_volume: MedicalVolume):
         med_volume (MedicalVolume): The MedicalVolume to test.
 
     Returns:
-        dictionary: A dictionary containing lists of indices for magnitude, phase, real, imaginary, and reco.
+        dictionary: A dictionary containing lists of indices for magnitude,
+        phase, real, imaginary, and reco.
     """
     ima_index = {'magnitude': [],
                  'phase': [],
@@ -129,8 +131,10 @@ class MeGreConverterGEMagnitude(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['magnitude'])
-        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
-        med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
+        med_volume_out.omids_header['PulseSequenceType'] \
+            = 'Multi-echo Gradient Echo'
+        med_volume_out.omids_header['MagneticFieldStrength'] \
+            = get_raw_tag_value(med_volume, '00180087')[0]
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
@@ -138,8 +142,10 @@ class MeGreConverterGEMagnitude(Converter):
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
-        med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
-        med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+        med_volume_out.omids_header['MagneticFieldStrength'] \
+            = get_raw_tag_value(med_volume, '00180087')[0]
+        med_volume_out.omids_header['WaterFatShift'] \
+            = _water_fat_shift_calc(med_volume)
 
         return med_volume_out
 
@@ -169,7 +175,8 @@ class MeGreConverterGEPhase(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['phase'])
-        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        med_volume_out.omids_header['PulseSequenceType'] \
+            = 'Multi-echo Gradient Echo'
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
@@ -177,10 +184,13 @@ class MeGreConverterGEPhase(Converter):
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
-        med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
-        med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+        med_volume_out.omids_header['MagneticFieldStrength'] \
+            = get_raw_tag_value(med_volume, '00180087')[0]
+        med_volume_out.omids_header['WaterFatShift'] \
+            = _water_fat_shift_calc(med_volume)
 
-        med_volume_out.volume = (med_volume_out.volume - 2048).astype(np.float32) * np.pi / 2048
+        med_volume_out.volume = (med_volume_out.volume
+                                 - 2048).astype(np.float32) * np.pi / 2048
 
         return med_volume_out
 
@@ -210,7 +220,8 @@ class MeGreConverterGEReal(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['real'])
-        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        med_volume_out.omids_header['PulseSequenceType'] \
+            = 'Multi-echo Gradient Echo'
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
@@ -218,8 +229,10 @@ class MeGreConverterGEReal(Converter):
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
-        med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
-        med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+        med_volume_out.omids_header['MagneticFieldStrength'] \
+            = get_raw_tag_value(med_volume, '00180087')[0]
+        med_volume_out.omids_header['WaterFatShift'] \
+            = _water_fat_shift_calc(med_volume)
 
         return med_volume_out
 
@@ -249,7 +262,8 @@ class MeGreConverterGEImaginary(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['imaginary'])
-        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        med_volume_out.omids_header['PulseSequenceType'] \
+            = 'Multi-echo Gradient Echo'
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
@@ -257,8 +271,10 @@ class MeGreConverterGEImaginary(Converter):
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
-        med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
-        med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+        med_volume_out.omids_header['MagneticFieldStrength'] \
+            = get_raw_tag_value(med_volume, '00180087')[0]
+        med_volume_out.omids_header['WaterFatShift'] \
+            = _water_fat_shift_calc(med_volume)
 
         return med_volume_out
 
@@ -284,7 +300,8 @@ class MeGreConverterGEReconstructedMap(Converter):
             return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
-        if 'RM' in scanning_sequence_list:
+        if ('RM' in scanning_sequence_list
+                and med_volume.omids_header['PulseSequenceType'] != 'DESS'):
             return True
         return False
 
@@ -292,5 +309,6 @@ class MeGreConverterGEReconstructedMap(Converter):
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['reco'])
-        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        med_volume_out.omids_header['PulseSequenceType'] \
+            = 'Multi-echo Gradient Echo'
         return med_volume_out
