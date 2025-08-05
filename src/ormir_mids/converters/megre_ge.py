@@ -1,8 +1,12 @@
 import os
 
 from .abstract_converter import Converter
-from voxel import MedicalVolume
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
+import numpy as np
+
+def get_raw_scanning_sequence(med_volume: MedicalVolume):
+    return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
 
 
 def _is_megre_ge(med_volume: MedicalVolume):
@@ -82,7 +86,7 @@ def _get_image_indices(med_volume: MedicalVolume):
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
-    if ~isinstance(scanning_sequence_list, list):
+    if not isinstance(scanning_sequence_list, list):
         scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
 
     for i in range(len(flat_ima_type)):
@@ -175,6 +179,8 @@ class MeGreConverterGEPhase(Converter):
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+
+        med_volume_out.volume = (med_volume_out.volume - 2048).astype(np.float32) * np.pi / 2048
 
         return med_volume_out
 

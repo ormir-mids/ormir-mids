@@ -2,9 +2,12 @@ import math
 import os
 
 from .abstract_converter import Converter
-from voxel import MedicalVolume
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
+
+def get_raw_scanning_sequence(med_volume: MedicalVolume):
+    return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
 
 def _is_mese_philips(med_volume: MedicalVolume):
     """
@@ -17,7 +20,7 @@ def _is_mese_philips(med_volume: MedicalVolume):
     """
     if 'PHILIPS' not in get_manufacturer(med_volume):
         return False
-    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+    scanning_sequence_list = get_raw_scanning_sequence(med_volume)
     echo_times_list = med_volume.omids_header['EchoTime']
 
     if isinstance(echo_times_list, list) and 'SE' in scanning_sequence_list:
@@ -58,9 +61,9 @@ def _get_image_indices(med_volume: MedicalVolume):
                  }
 
     ima_type_list = get_raw_tag_value(med_volume, '00089208')
-    flat_ima_type = [x for xs in ima_type_list for x in xs]
+    flat_ima_type = [x[0] for x in ima_type_list]
 
-    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+    scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
     for i in range(len(flat_ima_type)):
         if (flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] == 'SE'):
@@ -154,7 +157,7 @@ class MeSeConverterPhilipsReconstructedMap(Converter):
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
         if 'PHILIPS' not in get_manufacturer(med_volume):
             return False
-        scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+        scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
         if 'RM' in scanning_sequence_list:
             return True

@@ -1,7 +1,7 @@
 import os
 
 from .abstract_converter import Converter
-from voxel import MedicalVolume
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
 
@@ -177,6 +177,8 @@ class MeGreConverterPhilipsPhase(Converter):
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
+
+        med_volume_out.volume = (med_volume_out.volume - 2048).astype(np.float32) * np.pi / 2048
 
         return med_volume_out
 

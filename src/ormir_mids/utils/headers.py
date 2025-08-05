@@ -1,6 +1,7 @@
 import copy
 import itertools
 import operator
+import sys
 from collections import OrderedDict
 
 import numpy as np
@@ -8,7 +9,8 @@ import pydicom.dataset
 from pydicom.uid import generate_uid
 
 from ..config.tag_definitions import defined_tags, patient_tags
-from voxel import MedicalVolume
+from .OMidsMedVolume import OMidsMedVolume as MedicalVolume
+from .OMidsMedVolume import copy_headers
 
 from itertools import groupby
 
@@ -32,23 +34,7 @@ def _get_value_tag(element):
     if 'Alphabetic' in element: value_tag = 'Alphabetic'
     return value_tag
 
-
-def copy_headers(medical_volume_src, medical_volume_dest):
-    """ Copies the headers from one volume to another
-
-    Parameters:
-        medical_volume_src (MedicalVolume): the source volume
-        medical_volume_dest (MedicalVolume): the destination volume
-
-    Returns:
-        No return value
-    """
-    for header in ['omids_header', 'meta_header', 'patient_header', 'extra_header']:
-        setattr(medical_volume_dest, header, copy.deepcopy(getattr(medical_volume_src, header, None)))
-    setattr(medical_volume_dest, 'bids_header', getattr(medical_volume_dest, 'omids_header')) # for compatibility
-
-
-def get_raw_tag_value(med_volume, tag):
+def get_raw_tag_value(med_volume, tag, alternative_tag=None, force_raw=False):
     """
     Gets the value of a tag, regardless of its location in the header. A tag is always defined
     by its DICOM tag number.
@@ -56,37 +42,46 @@ def get_raw_tag_value(med_volume, tag):
     Parameters:
         med_volume (MedicalVolume): the volume to get the tag from
         tag (str): the DICOM tag identifier
+        alternative_tag (str, optional): an alternative tag to use if the first one is not found
+        force_raw (bool, optional): if True, the tag is always treated as a raw tag, don't try to get it from the standard header
 
     Returns:
         (Any): the value of the tag
     """
-    if tag in defined_tags:
-        # tag is named
-        named_tag = defined_tags[tag]
-        if isinstance(named_tag, list):
-            # tag is a list of tags. Find out what tag it actually is stored
-            for t in named_tag[:]:
-                if t in med_volume.omids_header:
-                    named_tag = t
-                    break
-        if isinstance(med_volume.omids_header[named_tag], list):
-            return list(map(defined_tags.get_translator(named_tag), med_volume.omids_header[named_tag]))
-        else:
-            return defined_tags.get_translator(named_tag)(med_volume.omids_header[named_tag])
+    if not force_raw:
+        if tag in defined_tags:
+            # tag is named
+            named_tag = defined_tags[tag]
+            if isinstance(named_tag, list):
+                # tag is a list of tags. Find out what tag it actually is stored
+                for t in named_tag[:]:
+                    if t in med_volume.omids_header:
+                        named_tag = t
+                        break
+            try:
+                if isinstance(med_volume.omids_header[named_tag], list):
+                    return list(map(defined_tags.get_translator(named_tag), med_volume.omids_header[named_tag]))
+                else:
+                    return defined_tags.get_translator(named_tag)(med_volume.omids_header[named_tag])
+            except KeyError as e:
+                if alternative_tag:
+                    return get_raw_tag_value(med_volume, alternative_tag)
+                else:
+                    raise e
 
-    if tag in patient_tags:
-        # tag is named
-        named_tag = patient_tags[tag]
-        if isinstance(named_tag, list):
-            # tag is a list of tags. Find out what tag it actually is stored
-            for t in named_tag[:]:
-                if t in med_volume.patient_header:
-                    named_tag = t
-                    break
-        if 'isList' in med_volume.patient_header[named_tag]:
-            return list(map(patient_tags.get_translator(named_tag), med_volume.patient_header[named_tag]))
-        else:
-            return patient_tags.get_translator(named_tag)(med_volume.patient_header[named_tag])
+        if tag in patient_tags:
+            # tag is named
+            named_tag = patient_tags[tag]
+            if isinstance(named_tag, list):
+                # tag is a list of tags. Find out what tag it actually is stored
+                for t in named_tag[:]:
+                    if t in med_volume.patient_header:
+                        named_tag = t
+                        break
+            if 'isList' in med_volume.patient_header[named_tag]:
+                return list(map(patient_tags.get_translator(named_tag), med_volume.patient_header[named_tag]))
+            else:
+                return patient_tags.get_translator(named_tag)(med_volume.patient_header[named_tag])
 
     # tag is numeric
     value_tag = _get_value_tag(med_volume.extra_header[tag])
@@ -140,8 +135,10 @@ def headers_to_dicts(header_list):
     json_header_list = []
     for h in header_list:
         meta_header = h.file_meta.to_json_dict()
-        meta_header['is_little_endian'] = h.is_little_endian
-        meta_header['is_implicit_VR'] = h.is_implicit_VR
+        # the following should already be in the json dict
+        #meta_header['is_little_endian'] = h.is_little_endian
+        #meta_header['is_implicit_VR'] = h.is_implicit_VR
+
         json_header_list.append({'meta': meta_header, 'header': h.to_json_dict()})
 
     # compress json header list
@@ -226,21 +223,8 @@ def dicts_to_headers(n_slices, compressed_header, compressed_meta = None):
         # ensure file meta
         if compressed_meta is not None:
             new_meta_dict = {}
-            is_little_endian = True
-            is_implicit_VR = False
             for key, element in compressed_meta.items():
-                if key == 'is_little_endian':
-                    if type(element) == list:
-                        is_little_endian = element[i]
-                    else:
-                        is_little_endian = element
-                    continue
-                if key == 'is_implicit_VR':
-                    if type(element) == list:
-                        is_implicit_VR = element[i]
-                    else:
-                        is_implicit_VR = element
-                    continue
+
                 new_meta_dict[key] = copy.deepcopy(element)
                 if 'isList' in element:
                     value_tag = _get_value_tag(element)
@@ -249,13 +233,10 @@ def dicts_to_headers(n_slices, compressed_header, compressed_meta = None):
 
             new_meta = pydicom.dataset.FileMetaDataset.from_json(new_meta_dict)
             new_header.file_meta = new_meta
-            new_header.is_little_endian = is_little_endian
-            new_header.is_implicit_VR = is_implicit_VR
             new_header.ensure_file_meta()
         else:
             new_meta = pydicom.dataset.FileMetaDataset()
-            new_header.is_little_endian = True
-            new_header.is_implicit_VR = False
+            new_meta.TransferSyntaxUID = '1.2.840.10008.1.2.1'
             new_meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.4'
             new_header.file_meta = new_meta
 
@@ -275,7 +256,7 @@ def separate_headers(raw_header_dict):
         (dict, dict, dict): the three dictionaries (bids, patient, raw)
     """
 
-    def process_dict(output_dict, tag_dict):
+    def process_dict(output_dict, tag_dict, remove=False):
         for numerical_key, named_key in tag_dict.items():
             try:
                 original_content = raw_header_dict[numerical_key]
@@ -291,21 +272,21 @@ def separate_headers(raw_header_dict):
                     output_dict[named_key] = list(map(translator, original_content[value_tag]))[2]
                 else:
                     output_dict[named_key] = translator(original_content[value_tag])
-                original_content[value_tag] = ''
+
+                if remove:
+                    original_content[value_tag] = '' # do not remove the original content
             except KeyError:
                 pass # key has no value
 
 
     patient_dict = {}
-    process_dict(patient_dict, patient_tags)
+    process_dict(patient_dict, patient_tags, remove=True)
     bids_dict = {}
     process_dict(bids_dict, defined_tags)
 
     # in-plane phase encoding direction - recommended by BIDS
     # TODO: fix correct polarity
-    pe_element = raw_header_dict['00181312']
-    value_tag = _get_value_tag(pe_element)
-    pe_value = pe_element[value_tag][0]
+    pe_value = bids_dict['PhaseEncodingDirection']
     if pe_value == 'ROW':
         bids_dict['PhaseEncodingDirection'] = 'j'
     else:
@@ -333,10 +314,26 @@ def remerge_headers(bids_dict, patient_dict, raw_header_dict):
             except KeyError:
                 print("Warning: unknown tag", named_key)
                 continue
-            try:
-                original_content = raw_header_dict[numerical_key]
-            except KeyError:
-                print("Warning: tag not in header", named_key)
+
+            found = False
+            original_content = None
+            if isinstance(numerical_key, list):
+                for key_to_test in numerical_key:
+                    try:
+                        original_content = raw_header_dict[key_to_test]
+                        numerical_key = key_to_test
+                        found = True
+                        break
+                    except KeyError:
+                        continue
+            else:
+                try:
+                    original_content = raw_header_dict[numerical_key]
+                    found = True
+                except KeyError:
+                    continue
+            if not found:
+                print("Warning: tag not found", named_key, numerical_key)
                 continue
             value_tag = _get_value_tag(original_content)
             translator = tag_dict.get_translator(named_key)
@@ -346,7 +343,7 @@ def remerge_headers(bids_dict, patient_dict, raw_header_dict):
             else:
                 original_content[value_tag] = translator(value)
 
-    process_dict(bids_dict, defined_tags)
+    #process_dict(bids_dict, defined_tags)
     process_dict(patient_dict, patient_tags)
 
     return raw_header_dict
@@ -376,7 +373,12 @@ def slice_volume_3d(medical_volume, slices_list):
             value_tag = _get_value_tag(value)
             new_value_list = []
             for sl in slices_list:
-                new_value_list.append(value[value_tag][sl])
+                try:
+                    new_value_list.append(value[value_tag][sl])
+                except IndexError:
+                    print(value)
+                    print(value_tag)
+                    sys.exit(-1)
             if _list_all_equal(new_value_list):
                 new_value[value_tag] = new_value_list[0]
                 del new_value['isList']
@@ -497,7 +499,14 @@ def group(medical_volume, key):
         indices_dict[real_value].append(index)
 
     array_stack = []
-    for index_list in indices_dict.values():
+
+    try:
+        items = sorted(indices_dict.items())
+    except TypeError:
+        print('Warning: could not sort indices_dict')
+        items = indices_dict.items()
+
+    for _,index_list in items:
         array_stack.append(medical_volume.volume[:, :, index_list])
 
     new_volume = np.stack(array_stack, axis=3)
@@ -528,7 +537,7 @@ def group(medical_volume, key):
 
 
     medical_volume_out.omids_header['FourthDimension'] = key
-    medical_volume_out.omids_header[key] = list(indices_dict.keys())  # only keep the different values
+    medical_volume_out.omids_header[key] = [i[0] for i in items]  # only keep the different values
     group_tags(medical_volume_out.extra_header)
     group_tags(medical_volume_out.meta_header)
 
