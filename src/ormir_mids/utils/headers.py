@@ -297,14 +297,17 @@ def separate_headers(raw_header_dict):
     bids_dict = {}
     process_dict(bids_dict, defined_tags)
 
-    # in-plane phase encoding direction - recommended by BIDS
-    # TODO: fix correct polarity
-    pe_value = bids_dict['PhaseEncodingDirection']
-    if pe_value == 'ROW':
-        bids_dict['PhaseEncodingDirection'] = 'j'
-    else:
-        bids_dict['PhaseEncodingDirection'] = 'i'
-
+    try:
+        # in-plane phase encoding direction - recommended by BIDS
+        # TODO: fix correct polarity
+        pe_value = bids_dict['PhaseEncodingDirection']
+        if pe_value == 'ROW':
+            bids_dict['PhaseEncodingDirection'] = 'j'
+        else:
+            bids_dict['PhaseEncodingDirection'] = 'i'
+    except KeyError:
+        # CT scanners do not provide these tags
+        pass
 
     return bids_dict, patient_dict, raw_header_dict
 

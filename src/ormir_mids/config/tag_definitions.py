@@ -133,11 +133,24 @@ defined_tags = TagDefinitionDict({
     # Tags for CT
     '00180060': 'XRayEnergy',
     '00181152': 'XRayExposure',
-     
+
     # Tags for CR
     '00181150': 'ExposureTime',
-    '00181151': 'X-RayTubeCurrent'
+    '00181151': 'X-RayTubeCurrent',
 
-    #TODO: DC-3T - Add relevant tags for MEGRE-Philips/Siemens and MESE-GE
+    # Tags for Scanco CT
+    # Standard DICOM tags
+    "00181153": "XRayExposure",
+    "00181210": "ConvolutionKernel",
+
+    # SCANCO rescale tags --> needed to calibrate image to BMD
+    "00281052": "RescaleIntercept",
+    "00281053": "RescaleSlope",
+    "00291000": "ScancoMuScaling",
+    "00291004": "ScancoDensitySlope",
+    "00291005": "ScancoDensityIntercept",
+    "00291006": "ScancoMuWater",
+
+    # TODO: DC-3T - Add relevant tags for MEGRE-Philips/Siemens and MESE-GE
 
 })
