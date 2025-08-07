@@ -1,8 +1,10 @@
 import os
 
-from .abstract_converter import Converter
 from voxel import MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_modality
+
+from ..utils.headers import (get_modality, get_raw_tag_value, group,
+                             slice_volume_3d)
+from .abstract_converter import Converter
 
 # flake8: noqa: E501
 
@@ -170,19 +172,9 @@ class ScancoConverter(Converter):
         # TODO: understand if this breaks the functionality of the rest of the code        
         # indices = _get_image_indices(med_volume)
         # med_volume = slice_volume_3d(med_volume, indices["hrpqct"])
-        
-        SCANCO_DENSITY_SLOPE = get_raw_tag_value(med_volume, "00291004")[0]
-        SCANCO_DENSITY_INTERCEPT = get_raw_tag_value(med_volume, "00291005")[0]
-        SCANCO_MU_SCALING = get_raw_tag_value(med_volume, "00291102")[0]
-        SCANCO_MU_WATER = get_raw_tag_value(med_volume, "00291006")[0]
-        calibration_parameters = {
-            "rescale_slope": SCANCO_DENSITY_SLOPE,
-            "rescale_intercept": SCANCO_DENSITY_INTERCEPT,
-            "mu_scaling": SCANCO_MU_SCALING,
-            "mu_water": SCANCO_MU_WATER,
-        }
 
         # Standard DICOM tags
+        med_volume.omids_header["Modality"] = get_modality(med_volume)
         med_volume.omids_header["XRayEnergy"] = get_raw_tag_value(med_volume, "00180060")[0]  # U peak (kV)
         med_volume.omids_header["XRayExposureTime"] = get_raw_tag_value(med_volume, "00181150")[0]  # ms
         med_volume.omids_header["XRayExposure"] = get_raw_tag_value(med_volume, "00181153")[0]  # μAs

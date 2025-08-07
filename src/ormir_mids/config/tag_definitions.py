@@ -131,6 +131,7 @@ defined_tags = TagDefinitionDict({
     '00181312': 'PhaseEncodingDirection',
 
     # Tags for CT
+    "00080060": 'Modality',
     '00180060': 'XRayEnergy',
     '00181152': 'XRayExposure',
 

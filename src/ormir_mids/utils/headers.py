@@ -3,15 +3,15 @@ import itertools
 import operator
 import sys
 from collections import OrderedDict
+from itertools import groupby
 
 import numpy as np
 import pydicom.dataset
 from pydicom.uid import generate_uid
-
-from ..config.tag_definitions import defined_tags, patient_tags
 from voxel import MedicalVolume
 
-from itertools import groupby
+from ..config.tag_definitions import defined_tags, patient_tags
+
 
 def _list_all_equal(iterable):
     """ Checks if all elements in a list are equal"""
@@ -116,6 +116,7 @@ def replace_volume(medical_volume, new_data):
     new_volume = MedicalVolume(new_data, medical_volume.affine)
     copy_headers(medical_volume, new_volume)
     return new_volume
+
 
 def copy_volume_with_omids_headers(medical_volume):
     """ Creates a copy of a medical volume with the BIDS headers
@@ -298,16 +299,19 @@ def separate_headers(raw_header_dict):
     process_dict(bids_dict, defined_tags)
 
     try:
-        # in-plane phase encoding direction - recommended by BIDS
-        # TODO: fix correct polarity
-        pe_value = bids_dict['PhaseEncodingDirection']
-        if pe_value == 'ROW':
-            bids_dict['PhaseEncodingDirection'] = 'j'
+        if "CT" in bids_dict.get("Modality", ""):
+            # CT scanners do not have a PhaseEncodingDirection tag
+            pass
         else:
-            bids_dict['PhaseEncodingDirection'] = 'i'
+            # in-plane phase encoding direction - recommended by BIDS
+            # TODO: fix correct polarity
+            pe_value = bids_dict['PhaseEncodingDirection']
+            if pe_value == 'ROW':
+                bids_dict['PhaseEncodingDirection'] = 'j'
+            else:
+                bids_dict['PhaseEncodingDirection'] = 'i'
     except KeyError:
-        # CT scanners do not provide these tags
-        pass
+        raise("Modality not found in BIDS header. Please check the input data.")
 
     return bids_dict, patient_dict, raw_header_dict
 
