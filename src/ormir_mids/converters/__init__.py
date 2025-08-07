@@ -3,6 +3,7 @@ from .ct import CTConverter, PCCTConverter, ScancoConverter
 from .mese_siemens import MeSeConverterSiemensMagnitude
 from .megre_siemens import MeGreConverterSiemensMagnitude, MeGreConverterSiemensPhase, MeGreConverterSiemensReal, \
     MeGreConverterSiemensImaginary, MeGreConverterSiemensReconstructedMap
+from .dess_ge import DESSConverterGECombined, DESSConverterGEFid, DESSConverterGEEcho
 from .mese_ge import MeSeConverterGEMagnitude
 from .megre_ge import MeGreConverterGEMagnitude, MeGreConverterGEPhase, MeGreConverterGEReal, \
     MeGreConverterGEImaginary, MeGreConverterGEReconstructedMap
@@ -22,6 +23,9 @@ converter_list = [
     MeGreConverterSiemensReal,
     MeGreConverterSiemensImaginary,
     MeGreConverterSiemensReconstructedMap,
+    DESSConverterGECombined,
+    DESSConverterGEFid,
+    DESSConverterGEEcho,
     MeSeConverterGEMagnitude,
     MeGreConverterGEMagnitude,
     MeGreConverterGEPhase,

@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from voxel import MedicalVolume
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 
 
 class Converter(ABC):

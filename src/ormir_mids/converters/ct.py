@@ -1,12 +1,8 @@
 import os
 
-from voxel import MedicalVolume
-
-from ..utils.headers import (get_modality, get_raw_tag_value, group,
-                             slice_volume_3d)
 from .abstract_converter import Converter
-
-# flake8: noqa: E501
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
+from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_modality
 
 
 def _is_ct(med_volume: MedicalVolume):

@@ -3,14 +3,15 @@ import itertools
 import operator
 import sys
 from collections import OrderedDict
-from itertools import groupby
 
 import numpy as np
 import pydicom.dataset
 from pydicom.uid import generate_uid
-from voxel import MedicalVolume
 
 from ..config.tag_definitions import defined_tags, patient_tags
+from voxel import MedicalVolume
+
+from itertools import groupby
 
 
 def _list_all_equal(iterable):
@@ -32,22 +33,6 @@ def _get_value_tag(element):
     if 'BulkDataURI' in element: value_tag = 'BulkDataURI'
     if 'Alphabetic' in element: value_tag = 'Alphabetic'
     return value_tag
-
-
-def copy_headers(medical_volume_src, medical_volume_dest):
-    """ Copies the headers from one volume to another
-
-    Parameters:
-        medical_volume_src (MedicalVolume): the source volume
-        medical_volume_dest (MedicalVolume): the destination volume
-
-    Returns:
-        No return value
-    """
-    for header in ['omids_header', 'meta_header', 'patient_header', 'extra_header']:
-        setattr(medical_volume_dest, header, copy.deepcopy(getattr(medical_volume_src, header, None)))
-    setattr(medical_volume_dest, 'bids_header', getattr(medical_volume_dest, 'omids_header')) # for compatibility
-
 
 def get_raw_tag_value(med_volume, tag, alternative_tag=None, force_raw=False):
     """
@@ -281,9 +266,11 @@ def separate_headers(raw_header_dict):
             value_tag = _get_value_tag(original_content)
             try:
                 translator = tag_dict.get_translator(numerical_key)
-
+                # Added workaround below for tag (0008,0008) - needed for some Siemens data
                 if 'isList' in original_content:
                     output_dict[named_key] = list(map(translator, original_content[value_tag]))
+                elif numerical_key == '00080008' and len(original_content[value_tag]) == 4:
+                    output_dict[named_key] = list(map(translator, original_content[value_tag]))[2]
                 else:
                     output_dict[named_key] = translator(original_content[value_tag])
 

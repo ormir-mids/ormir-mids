@@ -9,9 +9,9 @@ Specifically, the MedicalVolumes returned have four additional attributes:
     - extra_header: a dictionary containing raw DICOM tags that are not part of the BIDS header
     - meta_header: a dictionary containing the meta DICOM information
 """
-from voxel import MedicalVolume
+from .utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from .utils.io import load_dicom, save_bids, load_dicom_with_subfolders, save_dicom, find_omids, save_omids
 
 __all__ = ['load_dicom', 'save_bids', 'load_dicom_with_subfolders', 'save_dicom', 'find_omids']
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'

@@ -2,9 +2,10 @@
 import os
 import sys
 
-from voxel import MedicalVolume, DicomReader
+from ormir_mids.utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
+from voxel import DicomReader
 from ormir_mids.utils.headers import reduce, dicom_volume_to_bids, get_raw_tag_value
-from ormir_mids.utils.io import load_dicom, save_bids, load_bids, save_dicom
+from ormir_mids.utils.io import load_dicom, save_bids, load_omids, save_dicom
 
 import ormir_mids.converters
 
