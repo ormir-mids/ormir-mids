@@ -1,7 +1,5 @@
 import os
 
-import numpy as np
-
 from .abstract_converter import Converter
 from voxel import MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_modality
@@ -18,7 +16,6 @@ def _is_ct(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is a CT dataset, False otherwise.
     """
-    #
     if 'CT' not in get_modality(med_volume):
         return False
     else:
@@ -169,20 +166,6 @@ class ScancoConverter(Converter):
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
-        def __convert_scanco_to_bmd__(med_volume_in: np.ndarray, calibration_parameters: dict):
-            """
-            From ORMIR_XCT, M. Kuczynski.
-            Converts an image from Scanco native units to bone density units (mgHA/ccm).
-            The following relationships are used:
-                1. LinearAttenuation = ScancoUnits / mu_scaling
-                2. BMD = LinearAttenuation * rescale_slope + rescale_intercept
-            """
-            rescale_slope = calibration_parameters["rescale_slope"]
-            rescale_intercept = calibration_parameters["rescale_intercept"]
-            mu_scaling = calibration_parameters["mu_scaling"]
-            image_linatt = med_volume_in / int(mu_scaling)
-            image_bmd = image_linatt * rescale_slope + rescale_intercept
-            return image_bmd
 
         # TODO: understand if this breaks the functionality of the rest of the code        
         # indices = _get_image_indices(med_volume)
@@ -198,14 +181,6 @@ class ScancoConverter(Converter):
             "mu_scaling": SCANCO_MU_SCALING,
             "mu_water": SCANCO_MU_WATER,
         }
-
-        if 'Linear Attenuation' in get_raw_tag_value(med_volume, "0008103E")[0]:
-            # 0008103E: SeriesDescription
-            med_volume._volume = __convert_scanco_to_bmd__(med_volume._volume, calibration_parameters)
-        else:
-            raise NotImplementedError(
-                "ScancoConverter currently only supports conversion of Linear Attenuation images."
-            )
 
         # Standard DICOM tags
         med_volume.omids_header["XRayEnergy"] = get_raw_tag_value(med_volume, "00180060")[0]  # U peak (kV)
