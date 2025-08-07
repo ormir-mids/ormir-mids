@@ -136,4 +136,5 @@ dmypy.json
 /ormir-mids-venv
 .DS_Store
 workspace.code-workspace
+.vscode/
 /dicom
