@@ -9,9 +9,8 @@ import pydicom.dataset
 from pydicom.uid import generate_uid
 
 from ..config.tag_definitions import defined_tags, patient_tags
-from voxel import MedicalVolume
-
-from itertools import groupby
+from .OMidsMedVolume import OMidsMedVolume as MedicalVolume
+from .OMidsMedVolume import copy_headers
 
 
 def _list_all_equal(iterable):
