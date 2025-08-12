@@ -12,6 +12,8 @@ from ..config.tag_definitions import defined_tags, patient_tags
 from .OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from .OMidsMedVolume import copy_headers
 
+from itertools import groupby
+
 
 def _list_all_equal(iterable):
     """ Checks if all elements in a list are equal"""
