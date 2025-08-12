@@ -66,11 +66,12 @@ def _get_image_indices(med_volume: MedicalVolume):
     for i in range(len(flat_ima_type)):
         if flat_ima_type[i] == 6:
             ima_index['pcct'].append(i)
-        # TODO: change this logic (POS, 06.08.2025)
-        elif (flat_ima_type[i] == "ORIGINAL") or (flat_ima_type[i] == "PRIMARY") or (flat_ima_type[i] == "AXIAL"):
-            ima_index['hrpqct'].append(i)
         else:
-            ima_index['ct'].append(i)
+            _manufacturer = get_raw_tag_value(med_volume, '00080070')[0]
+            if 'SCANCO' in str(_manufacturer).upper():
+                ima_index['hrpqct'].append(i)
+            else:
+                ima_index['ct'].append(i)
 
     return ima_index
 
@@ -165,8 +166,7 @@ class ScancoConverter(Converter):
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
 
-        # TODO: understand if this breaks the functionality of the rest of the code        
-        # indices = _get_image_indices(med_volume)
+        indices = _get_image_indices(med_volume)
         # med_volume = slice_volume_3d(med_volume, indices["hrpqct"])
 
         # Standard DICOM tags

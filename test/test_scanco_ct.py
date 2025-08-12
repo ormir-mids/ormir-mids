@@ -1,8 +1,10 @@
 import pytest
 import json
 from ormir_mids.dcm2omids import convert_dicom_to_ormirmids
-from helpers import (zenodo_download_and_extract,
-                     check_nib_shape)
+from helpers import zenodo_download_and_extract, check_nib_shape
+import unittest.mock as mock
+from ormir_mids.converters.ct import ScancoConverter
+from ormir_mids.utils.OMidsMedVolume import OMidsMedVolume
 
 
 @pytest.fixture(scope="session")
@@ -104,3 +106,32 @@ def test_nii(converted_data):
     # Check shape
     nii_shape = (658, 658, 84)  # QC1 expected shape
     assert check_nib_shape(nii_file, nii_shape)
+
+
+def test_compatibility_detection():
+    """Test that ScancoConverter correctly identifies compatible datasets"""
+
+    # Create mock MedicalVolume with Scanco headers and add required attributes
+    mock_volume = mock.MagicMock(spec=OMidsMedVolume)
+    mock_volume.omids_header = {}
+    mock_volume.extra_header = {}  # Add this too as it might be needed
+    mock_volume.patient_header = {}  # And this one
+
+    # Test case 1: Valid Scanco CT
+    with mock.patch("ormir_mids.converters.ct._is_ct", return_value=True), mock.patch(
+        "ormir_mids.converters.ct.get_raw_tag_value", return_value=["SCANCO Medical"]
+    ), mock.patch("ormir_mids.converters.ct._test_ima_type", return_value=True):
+        assert ScancoConverter.is_dataset_compatible(mock_volume) is True
+
+    # Test case 2: Not a CT scan - Mock get_raw_tag_value too since it's still called
+    with mock.patch("ormir_mids.converters.ct._is_ct", return_value=False), mock.patch(
+        "ormir_mids.converters.ct.get_raw_tag_value", return_value=["SOMETHING"]
+    ):
+        assert ScancoConverter.is_dataset_compatible(mock_volume) is False
+
+    # Test case 3: CT but not Scanco
+    with mock.patch("ormir_mids.converters.ct._is_ct", return_value=True), mock.patch(
+        "ormir_mids.converters.ct.get_raw_tag_value",
+        return_value=["Random Manufacturer"],
+    ):
+        assert ScancoConverter.is_dataset_compatible(mock_volume) is False
