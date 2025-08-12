@@ -298,8 +298,8 @@ def separate_headers(raw_header_dict):
                 bids_dict['PhaseEncodingDirection'] = 'j'
             else:
                 bids_dict['PhaseEncodingDirection'] = 'i'
-    except KeyError:
-        raise("Modality not found in BIDS header. Please check the input data.")
+    except KeyError as e:
+        raise KeyError("Modality not found in BIDS header. Please check the input data.") from e
 
     return bids_dict, patient_dict, raw_header_dict
 
