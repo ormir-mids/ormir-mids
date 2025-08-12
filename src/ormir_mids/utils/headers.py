@@ -269,7 +269,7 @@ def separate_headers(raw_header_dict):
                 if 'isList' in original_content:
                     output_dict[named_key] = list(map(translator, original_content[value_tag]))
                 elif numerical_key == '00080008' and len(original_content[value_tag]) == 4:
-                    output_dict[named_key] = list(map(translator, original_content[value_tag]))[2]
+                    output_dict[named_key] = original_content[value_tag][2]
                 else:
                     output_dict[named_key] = translator(original_content[value_tag])
 
