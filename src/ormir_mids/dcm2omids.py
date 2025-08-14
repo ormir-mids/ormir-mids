@@ -3,9 +3,10 @@ import re
 import json
 import os
 import sys
+
+from .converters import RootConverter
 from .utils.headers import concatenate_volumes_3d, group, get_raw_tag_value
 from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders
-from .converters import converter_list
 import pathlib
 
 import argparse
@@ -47,7 +48,6 @@ def parse_list_expression(list_expression):
     else:
         n_values = int((float(m.group(3))-start)/step) + 1
     return [start + i * step for i in range(n_values)]
-
 
 
 def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, series_number=False, save_patient_json=True, save_extra_json=True):
@@ -138,8 +138,6 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
     print(overrides)
 
 
-
-
     multiseries_finished = None
 
 
@@ -148,6 +146,67 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
         if series_number in overrides:
             for key, value in overrides[series_number].items():
                 med_volume.omids_header[key] = value
+
+    def convert_recursive(converter_class, med_volume):
+        print('Checking converter', converter_class.get_name())
+        compatible_dataset = False
+
+        try:
+            compatible_dataset = converter_class.is_dataset_compatible(med_volume)
+        except Exception as e:
+            pass
+
+        if not compatible_dataset:
+            return False
+
+        for child_converter in converter_class.get_children():
+            try:
+                if convert_recursive(child_converter, med_volume):
+                    return True
+            except Exception as e:
+                pass
+
+        # if we reach here, the converter_class is compatible but none of its children are. Use it.
+        if multiseries_part == converter_class.is_multiseries():
+            print('Volume compatible with', converter_class.get_name())
+            try:
+                converted_volume = converter_class.convert_dataset(med_volume)
+            except Exception as e:
+                print(f'Error converting volume with {converter_class.get_name()}: {e}')
+                converted_volume = None
+            if converted_volume is None:
+                # This class cannot convert datasets, it's just a dependency class
+                return False
+            output_path = pathlib.Path(outputDir) / converter_class.get_directory()
+            output_path.mkdir(parents=True, exist_ok=True)
+            if ANON_NAME:
+                patient_name = ANON_NAME
+            else:
+                patient_name = med_volume.patient_header['PatientName']
+            if multiseries_part:
+                if multiseries_finished is not None:
+                    # a multiseries is finished, we can concatenate
+                    concat_volume_4d = concatenate_volumes_3d(multiseries_volumes[series_group_name])
+                    converted_multiseries_volume = group(concat_volume_4d, converter_class.multiseries_concat_tag())
+
+                    series_prefix = ''
+                    if ADD_SERIES_NUMBER:
+                        first_series = min(
+                            [get_raw_tag_value(x, '00200011')[0] for x in multiseries_volumes[series_group_name]])
+                        series_prefix = f'{first_series:03d}_'
+
+                    save_omids(
+                        str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
+                        converted_multiseries_volume, save_patient_json, save_extra_json)
+                    print('Volume saved')
+            series_prefix = ''
+            if ADD_SERIES_NUMBER:
+                series_prefix = f'{get_raw_tag_value(med_volume, "00200011")[0]:03d}_'
+            save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
+                       converted_volume, save_patient_json, save_extra_json)
+            print('Volume saved')
+            return True # we successfully converted the volume
+        return False # this converter tree is not compatible with the volume
 
     for med_volume in med_volume_list:
         multiseries_part = False
@@ -171,42 +230,11 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                     else:
                         multiseries_finished = None
                     break # don't search for other groups
-        for converter_class in converter_list:
-            try:
-                compatible_dataset = converter_class.is_dataset_compatible(med_volume)
-            except Exception as e:
-                compatible_dataset = False
-            if multiseries_part == converter_class.is_multiseries() and compatible_dataset:
-                print('Volume compatible with', converter_class.get_name())
-                output_path = pathlib.Path(outputDir) / converter_class.get_directory()
-                output_path.mkdir(parents=True, exist_ok=True)
-                converted_volume = converter_class.convert_dataset(med_volume)
-                if ANON_NAME:
-                    patient_name = ANON_NAME
-                else:
-                    patient_name = med_volume.patient_header['PatientName']
-                if multiseries_part:
-                    if multiseries_finished is not None:
-                        # a multiseries is finished, we can concatenate
-                        concat_volume_4d = concatenate_volumes_3d(multiseries_volumes[series_group_name])
-                        converted_multiseries_volume = group(concat_volume_4d, converter_class.multiseries_concat_tag())
 
-                        series_prefix = ''
-                        if ADD_SERIES_NUMBER:
-                            first_series = min([get_raw_tag_value(x, '00200011')[0] for x in multiseries_volumes[series_group_name]])
-                            series_prefix = f'{first_series:03d}_'
-
-                        save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
-                                  converted_multiseries_volume, save_patient_json, save_extra_json)
-                        print('Volume saved')
-                    continue
-                series_prefix = ''
-                if ADD_SERIES_NUMBER:
-                    series_prefix = f'{get_raw_tag_value(med_volume, "00200011")[0]:03d}_'
-                save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz', converted_volume, save_patient_json, save_extra_json)
-                print('Volume saved')
-
-
+        if convert_recursive(RootConverter, med_volume):
+            print("Dataset converted successfully")
+        else:
+            print("No compatible converter found for dataset", med_volume.path)
 
 
 def main():

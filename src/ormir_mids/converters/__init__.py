@@ -1,45 +1,28 @@
-from .cr import CrConverter
-from .ct import CTConverter, PCCTConverter, ScancoConverter
-from .mese_siemens import MeSeConverterSiemensMagnitude
-from .megre_siemens import MeGreConverterSiemensMagnitude, MeGreConverterSiemensPhase, MeGreConverterSiemensReal, \
-    MeGreConverterSiemensImaginary, MeGreConverterSiemensReconstructedMap
-from .dess_ge import DESSConverterGECombined, DESSConverterGEFid, DESSConverterGEEcho
-from .mese_ge import MeSeConverterGEMagnitude
-from .megre_ge import MeGreConverterGEMagnitude, MeGreConverterGEPhase, MeGreConverterGEReal, \
-    MeGreConverterGEImaginary, MeGreConverterGEReconstructedMap
-from .dess_siemens import DESSConverterSiemensMagnitude
-from .mese_philips import MeSeConverterPhilipsMagnitude, MeSeConverterPhilipsPhase, MeSeConverterPhilipsReconstructedMap
-from .megre_philips import MeGreConverterPhilipsMagnitude, MeGreConverterPhilipsPhase, MeGreConverterPhilipsReal, \
-    MeGreConverterPhilipsImaginary, MeGreConverterPhilipsReconstructedMap
+from ..converter_base.abstract_converter import RootConverter
+from . import cr
+from . import ct
+from . import MR
+from . import PhilipsMR
+from . import SiemensMR
+from . import GEMR
+from . import dess_ge
+from . import dess_siemens
+from . import megre_ge
+from . import megre_philips
+from . import megre_siemens
+from . import mese_ge
+from . import mese_philips
+from . import mese_siemens
+from . import quantitative_maps
+
 from .quantitative_maps import T1Converter, T2Converter, FFConverter, B0Converter, B1Converter
 
-converter_list = [
-    CrConverter,
-    CTConverter,
-    PCCTConverter,
-    ScancoConverter,
-    MeSeConverterSiemensMagnitude,
-    MeGreConverterSiemensMagnitude,
-    MeGreConverterSiemensPhase,
-    MeGreConverterSiemensReal,
-    MeGreConverterSiemensImaginary,
-    MeGreConverterSiemensReconstructedMap,
-    DESSConverterSiemensMagnitude,
-    DESSConverterGECombined,
-    DESSConverterGEFid,
-    DESSConverterGEEcho,
-    MeSeConverterGEMagnitude,
-    MeGreConverterGEMagnitude,
-    MeGreConverterGEPhase,
-    MeGreConverterGEReal,
-    MeGreConverterGEImaginary,
-    MeGreConverterGEReconstructedMap,
-    MeSeConverterPhilipsMagnitude,
-    MeSeConverterPhilipsPhase,
-    MeSeConverterPhilipsReconstructedMap,
-    MeGreConverterPhilipsMagnitude,
-    MeGreConverterPhilipsPhase,
-    MeGreConverterPhilipsReal,
-    MeGreConverterPhilipsImaginary,
-    MeGreConverterPhilipsReconstructedMap,
-]
+# print converter tree
+def print_lineage(converter, level=0):
+    if level == 5:
+        return
+    print('  ' * level + converter.get_name())
+    for child in converter.get_children():
+        print_lineage(child, level + 1)
+
+print_lineage(RootConverter)

@@ -1,6 +1,7 @@
 import os
 
-from .abstract_converter import Converter
+from .GEMR import GEMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, get_manufacturer
 
@@ -21,9 +22,6 @@ class MeSeConverterGEMagnitude(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'GE' not in get_manufacturer(med_volume):
-            return False
-
         # check if magnitude
         try:
             image_type = get_raw_tag_value(med_volume, '0043102F')[0]
@@ -48,3 +46,4 @@ class MeSeConverterGEMagnitude(Converter):
         med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
         return med_volume_out
 
+MeSeConverterGEMagnitude.set_parent(GEMRConverter)

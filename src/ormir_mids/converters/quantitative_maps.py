@@ -1,9 +1,9 @@
 import os
 from abc import abstractmethod
 
-from .abstract_converter import Converter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, reduce, copy_volume_with_omids_headers
+from ..utils.headers import reduce, copy_volume_with_omids_headers
 
 
 class AbstractQuantitativeConverter(Converter):
@@ -78,4 +78,3 @@ class B1Converter(AbstractQuantitativeConverter):
     @classmethod
     def _get_tag(cls):
         return 'b1'
-

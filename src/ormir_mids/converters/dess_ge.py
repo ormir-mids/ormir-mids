@@ -1,6 +1,7 @@
 import os
 
-from .abstract_converter import Converter
+from .GEMR import GEMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, slice_volume_3d, get_manufacturer
 
@@ -14,9 +15,6 @@ def _is_dess_ge(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is a DESS GE dataset, False otherwise.
     """
-    if 'GE' not in get_manufacturer(med_volume):
-        return False
-
     pulse_sequence_name = get_raw_tag_value(med_volume, '0019109C')[0]  # sequence name mensa*
 
     if "mensa" in pulse_sequence_name:
@@ -56,6 +54,17 @@ def _get_image_indices(med_volume: MedicalVolume):
 
     return ima_index
 
+
+class DESSConverterGERoot(Converter):
+    @classmethod
+    def get_name(cls):
+        return 'DESS_GE'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_dess_ge(med_volume)
+
+DESSConverterGERoot.set_parent(GEMRConverter)
 
 class DESSConverterGECombined(Converter):
 
@@ -161,3 +170,6 @@ class DESSConverterGEEcho(Converter):
 
         return med_volume_out
 
+DESSConverterGECombined.set_parent(DESSConverterGERoot)
+DESSConverterGEFid.set_parent(DESSConverterGERoot)
+DESSConverterGEEcho.set_parent(DESSConverterGERoot)
