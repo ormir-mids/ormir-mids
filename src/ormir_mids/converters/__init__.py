@@ -7,6 +7,7 @@ from .dess_ge import DESSConverterGECombined, DESSConverterGEFid, DESSConverterG
 from .mese_ge import MeSeConverterGEMagnitude
 from .megre_ge import MeGreConverterGEMagnitude, MeGreConverterGEPhase, MeGreConverterGEReal, \
     MeGreConverterGEImaginary, MeGreConverterGEReconstructedMap
+from .dess_siemens import DESSConverterSiemensMagnitude
 from .mese_philips import MeSeConverterPhilipsMagnitude, MeSeConverterPhilipsPhase, MeSeConverterPhilipsReconstructedMap
 from .megre_philips import MeGreConverterPhilipsMagnitude, MeGreConverterPhilipsPhase, MeGreConverterPhilipsReal, \
     MeGreConverterPhilipsImaginary, MeGreConverterPhilipsReconstructedMap
@@ -23,6 +24,7 @@ converter_list = [
     MeGreConverterSiemensReal,
     MeGreConverterSiemensImaginary,
     MeGreConverterSiemensReconstructedMap,
+    DESSConverterSiemensMagnitude,
     DESSConverterGECombined,
     DESSConverterGEFid,
     DESSConverterGEEcho,
