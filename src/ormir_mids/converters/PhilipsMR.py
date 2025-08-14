@@ -6,7 +6,7 @@ from ..utils import get_manufacturer
 class PhilipsMRConverter(Converter):
     @classmethod
     def get_name(cls):
-        return 'MR'
+        return 'Philips MR'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume):

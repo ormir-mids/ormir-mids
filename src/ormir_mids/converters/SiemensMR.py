@@ -6,7 +6,7 @@ from ..utils import get_manufacturer
 class SiemensMRConverter(Converter):
     @classmethod
     def get_name(cls):
-        return 'MR'
+        return 'Siemens MR'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume):

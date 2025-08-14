@@ -1,4 +1,7 @@
 from ..converter_base.abstract_converter import RootConverter
+
+# just importing all the converters builds the converter tree.
+# If you create a new converter, make sure to import it here
 from . import cr
 from . import ct
 from . import MR
@@ -19,10 +22,10 @@ from .quantitative_maps import T1Converter, T2Converter, FFConverter, B0Converte
 
 # print converter tree
 def print_lineage(converter, level=0):
-    if level == 5:
-        return
     print('  ' * level + converter.get_name())
     for child in converter.get_children():
         print_lineage(child, level + 1)
 
-print_lineage(RootConverter)
+# Uncomment the line below to print the converter tree
+# This can be useful for debugging or understanding the converter hierarchy.
+# print_lineage(RootConverter)

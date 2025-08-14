@@ -6,7 +6,7 @@ from ..utils import get_manufacturer
 class GEMRConverter(Converter):
     @classmethod
     def get_name(cls):
-        return 'MR'
+        return 'GE MR'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume):
