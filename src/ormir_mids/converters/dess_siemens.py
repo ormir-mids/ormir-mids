@@ -1,6 +1,7 @@
 import os
 
-from .abstract_converter import Converter
+from .SiemensMR import SiemensMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, get_manufacturer
 
@@ -49,3 +50,4 @@ class DESSConverterSiemensMagnitude(Converter):
 
         return med_volume_out
 
+DESSConverterSiemensMagnitude.set_parent(SiemensMRConverter)

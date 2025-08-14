@@ -1,8 +1,8 @@
 import os
 
-from .abstract_converter import Converter
+from ..converter_base.abstract_converter import Converter, RootConverter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_modality
+from ..utils.headers import get_raw_tag_value, slice_volume_3d, get_modality
 
 
 def _is_ct(med_volume: MedicalVolume):
@@ -76,6 +76,16 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
+class CTConverterRoot(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'CTRoot'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_ct(med_volume)
+
 class CTConverter(Converter):
 
     @classmethod
@@ -92,9 +102,6 @@ class CTConverter(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_ct(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 0)
 
     @classmethod
@@ -124,9 +131,6 @@ class PCCTConverter(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_ct(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 1)
 
     @classmethod
@@ -159,7 +163,7 @@ class ScancoConverter(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_ct(med_volume) and 'SCANCO' not in str(get_raw_tag_value(med_volume, '00080070')[0]).upper():
+        if 'SCANCO' not in str(get_raw_tag_value(med_volume, '00080070')[0]).upper():
             return False
         return _test_ima_type(med_volume, "ORIGINAL")
 
@@ -185,3 +189,8 @@ class ScancoConverter(Converter):
         med_volume.omids_header["ScancoMuWater"] = get_raw_tag_value(med_volume, "00291006")[0]  # (0029,1006) density factor
 
         return med_volume
+
+CTConverterRoot.set_parent(RootConverter)
+ScancoConverter.set_parent(CTConverterRoot)
+PCCTConverter.set_parent(CTConverterRoot)
+CTConverter.set_parent(CTConverterRoot)

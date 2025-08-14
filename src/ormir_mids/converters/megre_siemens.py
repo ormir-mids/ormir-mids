@@ -2,7 +2,8 @@ import os
 
 import numpy as np
 
-from .abstract_converter import Converter
+from .SiemensMR import SiemensMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
@@ -18,9 +19,6 @@ def _is_megre_siemens(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is a MEGRE Siemens dataset, False otherwise.
     """
-    if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
-        return False
-
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
     if 'GR' in scanning_sequence_list or 'GRADIENT' in scanning_sequence_list:
@@ -133,6 +131,18 @@ def _get_echo_times(echo_times_list, indices, ima_type: str):
         echo_times_nu = [echo_times_list] * len(indices[ima_type])
     return echo_times_nu
 
+class MeGreConverterSiemensRoot(Converter):
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Siemens_Root'
+
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_megre_siemens(med_volume)
+
+MeGreConverterSiemensRoot.set_parent(SiemensMRConverter)
+
 class MeGreConverterSiemensMagnitude(Converter):
 
     @classmethod
@@ -153,9 +163,6 @@ class MeGreConverterSiemensMagnitude(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 0)
 
     @classmethod
@@ -212,9 +219,6 @@ class MeGreConverterSiemensPhase(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 1)
 
     @classmethod
@@ -264,9 +268,6 @@ class MeGreConverterSiemensReal(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 2)
 
     @classmethod
@@ -313,9 +314,6 @@ class MeGreConverterSiemensImaginary(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 3)
 
     @classmethod
@@ -359,8 +357,6 @@ class MeGreConverterSiemensReconstructedMap(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
-            return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
         if 'RM' in scanning_sequence_list:
@@ -373,3 +369,9 @@ class MeGreConverterSiemensReconstructedMap(Converter):
         med_volume_out = slice_volume_3d(med_volume, indices['reco'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         return med_volume_out
+
+MeGreConverterSiemensMagnitude.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensPhase.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensReal.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensImaginary.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensReconstructedMap.set_parent(SiemensMRConverter)

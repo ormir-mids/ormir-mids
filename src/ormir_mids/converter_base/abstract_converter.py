@@ -4,6 +4,27 @@ from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 
 
 class Converter(ABC):
+
+    children = None
+    @classmethod
+    def add_child(cls, child_cls):
+        """ Adds a child class to the list of children for this converter class."""
+        if cls.children is None:
+            cls.children = []
+        if child_cls not in cls.children:
+            cls.children.append(child_cls)
+
+    @classmethod
+    def get_children(cls):
+        """ Returns the list of child classes for this converter class."""
+        if cls.children is None:
+            return []
+        return cls.children
+
+    @classmethod
+    def set_parent(cls, parent_cls):
+        parent_cls.add_child(cls)
+
     def __init__(self):
         pass
 
@@ -57,4 +78,18 @@ class Converter(ABC):
     @classmethod
     def multiseries_concat_tag(cls):
         return 'EchoTime'
-            
+
+
+class RootConverter(Converter):
+    """
+    A root converter that can be used to find all converters.
+    """
+
+    @classmethod
+    def get_name(cls):
+        return 'RootConverter'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        # Every dataset is compatible with the root converter
+        return True
