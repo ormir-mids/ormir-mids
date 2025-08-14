@@ -20,6 +20,10 @@ def check_echo_times(json_path, echo_times_list):
         dataset_description = json.load(f)
     return dataset_description["EchoTime"] == echo_times_list
 
+def load_json(json_path):
+    with open(json_path, "r") as f:
+        return json.load(f)
+
 
 def download_and_extract(url, extract_dir):
     # Download

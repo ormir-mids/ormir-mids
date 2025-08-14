@@ -23,19 +23,37 @@ def test_convert(test_dirs):
     data_dir, output_dir = test_dirs
     convert_dicom_to_ormirmids(data_dir, output_dir, anonymize='anon', recursive=True, series_number=False, save_patient_json=True, save_extra_json=True)
     assert (output_dir / 'mr-anat').exists()
-    assert n_files_in_dir(output_dir / 'mr-anat') == 12
+    assert n_files_in_dir(output_dir / 'mr-anat') == 16
 
-def test_json(test_dirs):
+def test_megre_json(test_dirs):
     data_dir, output_dir = test_dirs
     omids_dir = output_dir / 'mr-anat'
     assert check_echo_times(omids_dir / 'anon_megre.json', [1.23, 2.46])
     assert check_echo_times(omids_dir / 'anon_megre_ph.json', [1.23, 2.46])
-    assert check_echo_times(omids_dir / 'anon_mese.json', [11.0, 22.0, 33.0, 44.0, 55.0, 66.0, 77.0, 88.0,
-                                                           99.0, 110.0, 121.0, 132.0, 143.0, 154.0, 165.0, 176.0, 187.0])
 
-def test_nii(test_dirs):
+def test_mese_json(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'mr-anat'
+    assert check_echo_times(omids_dir / 'anon_mese.json', [11.0, 22.0, 33.0, 44.0, 55.0, 66.0, 77.0, 88.0,
+                                                       99.0, 110.0, 121.0, 132.0, 143.0, 154.0, 165.0, 176.0, 187.0])
+
+def test_dess_json(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'mr-anat'
+    assert load_json(omids_dir / 'anon_DESS.json')["PulseSequenceType"] == "DESS"
+
+def test_megre_nii(test_dirs):
     data_dir, output_dir = test_dirs
     omids_dir = output_dir / 'mr-anat'
     assert check_nib_shape(omids_dir / 'anon_megre.nii.gz', (104, 256, 150, 2))
     assert check_nib_shape(omids_dir / 'anon_megre_ph.nii.gz', (104, 256, 150, 2))
+
+def test_mese_nii(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'mr-anat'
     assert check_nib_shape(omids_dir / 'anon_mese.nii.gz', (128, 256, 8, 17))
+
+def test_dess_nii(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'mr-anat'
+    assert check_nib_shape(omids_dir / 'anon_DESS.nii.gz', (256, 256, 60))
