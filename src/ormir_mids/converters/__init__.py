@@ -1,5 +1,5 @@
 from .cr import CrConverter
-from .ct import CTConverter, PCCTConverter
+from .ct import CTConverter, PCCTConverter, ScancoConverter
 from .mese_siemens import MeSeConverterSiemensMagnitude
 from .megre_siemens import MeGreConverterSiemensMagnitude, MeGreConverterSiemensPhase, MeGreConverterSiemensReal, \
     MeGreConverterSiemensImaginary, MeGreConverterSiemensReconstructedMap
@@ -16,6 +16,7 @@ converter_list = [
     CrConverter,
     CTConverter,
     PCCTConverter,
+    ScancoConverter,
     MeSeConverterSiemensMagnitude,
     MeGreConverterSiemensMagnitude,
     MeGreConverterSiemensPhase,

@@ -14,6 +14,7 @@ from .OMidsMedVolume import copy_headers
 
 from itertools import groupby
 
+
 def _list_all_equal(iterable):
     """ Checks if all elements in a list are equal"""
     g = groupby(iterable)
@@ -101,6 +102,7 @@ def replace_volume(medical_volume, new_data):
     new_volume = MedicalVolume(new_data, medical_volume.affine)
     copy_headers(medical_volume, new_volume)
     return new_volume
+
 
 def copy_volume_with_omids_headers(medical_volume):
     """ Creates a copy of a medical volume with the BIDS headers
@@ -284,14 +286,20 @@ def separate_headers(raw_header_dict):
     bids_dict = {}
     process_dict(bids_dict, defined_tags)
 
-    # in-plane phase encoding direction - recommended by BIDS
-    # TODO: fix correct polarity
-    pe_value = bids_dict['PhaseEncodingDirection']
-    if pe_value == 'ROW':
-        bids_dict['PhaseEncodingDirection'] = 'j'
-    else:
-        bids_dict['PhaseEncodingDirection'] = 'i'
-
+    try:
+        if "CT" in bids_dict.get("Modality", ""):
+            # CT scanners do not have a PhaseEncodingDirection tag
+            pass
+        else:
+            # in-plane phase encoding direction - recommended by BIDS
+            # TODO: fix correct polarity
+            pe_value = bids_dict['PhaseEncodingDirection']
+            if pe_value == 'ROW':
+                bids_dict['PhaseEncodingDirection'] = 'j'
+            else:
+                bids_dict['PhaseEncodingDirection'] = 'i'
+    except KeyError as e:
+        raise KeyError("Modality not found in BIDS header. Please check the input data.") from e
 
     return bids_dict, patient_dict, raw_header_dict
 
