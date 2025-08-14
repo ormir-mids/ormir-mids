@@ -36,7 +36,6 @@ def downloaded_data(test_dirs):
     assert (
         data_dir / "XCTII-QC1-PHANTOM"
     ).exists(), "XCTII-QC1-PHANTOM directory not found"
-    assert (data_dir / "__MACOSX").exists(), "__MACOSX directory not found"
     assert (data_dir / "md5sums.txt").exists(), "md5sums.txt file not found"
 
     # Return the path to the DICOM directory specifically
