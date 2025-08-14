@@ -26,7 +26,6 @@ class MeSeConverterSiemensMagnitude(Converter):
         # check if magnitude
         try:
             image_type = get_raw_tag_value(med_volume, '00089208')[0] # this is defined in newer versions
-            print(image_type)
             if image_type[0] != 'M':
                 return False
         except:
@@ -36,7 +35,6 @@ class MeSeConverterSiemensMagnitude(Converter):
 
 
         scanning_sequence = get_raw_tag_value(med_volume, '00180020')[0]
-        print(scanning_sequence)
         # echo_times = get_raw_tag_value(med_volume, 'EchoTime')
         n_echo_times = len(med_volume.omids_header['EchoTime'])
 

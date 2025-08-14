@@ -28,7 +28,6 @@ class DESSConverterSiemensMagnitude(Converter):
         # if 'M' not in get_raw_tag_value(med_volume, '00080008'):
         #     return False
 
-        print(med_volume.omids_header['ScanningSequence'])
         try:
             scanning_sequence = get_raw_tag_value(med_volume, '00180024')[0] #sequence name *de3d
         except KeyError:

@@ -27,14 +27,12 @@ class MeSeConverterGEMagnitude(Converter):
         # check if magnitude
         try:
             image_type = get_raw_tag_value(med_volume, '0043102F')[0]
-            print(image_type)
             if image_type[0] != 0:
                 return False
         except:
             pass
 
         scanning_sequence = med_volume.omids_header['ScanningSequence']
-        print(scanning_sequence)
         n_echo_times = len(med_volume.omids_header['EchoTime'])
 
         if scanning_sequence == 'SE' and n_echo_times > 1:
