@@ -50,20 +50,28 @@ def parse_list_expression(list_expression):
 
 
 
-def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, series_number=False, save_patient_json=True, save_extra_json=True):
+def convert_dicom_to_ormirmids(input_folder, output_folder, recursive=True, series_number=False, save_patient_json=True,
+                               save_extra_json=True, **kwargs):
     """
     Convert DICOM to ORMIR-MIDS format.
     
     Parameters:
     - input_folder (str): Path to the input folder with DICOM files.
     - output_folder (str): Path to the output folder where results will be saved.
-    - anonymize (str): Pseudonym for patient name (default: 'anon').
     - recursive (bool): Whether to recurse into subfolders (default: True).
+    - **kwargs:
+        - anonymize (str): Pseudonym for patient name (default: 'anon').
     """
     
     inputDir = input_folder
     outputDir = output_folder
-    ANON_NAME = anonymize
+    if 'anonymize' in kwargs:
+        anonymize = kwargs['anonymize']
+        if anonymize is None:
+            anonymize = 'anon'
+        ANON_NAME = anonymize
+    else:
+        ANON_NAME = None
     RECURSIVE = recursive
     ADD_SERIES_NUMBER = series_number
     concat_flag = False
@@ -184,7 +192,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                 if ANON_NAME:
                     patient_name = ANON_NAME
                 else:
-                    patient_name = med_volume.patient_header['PatientName']
+                    patient_name = med_volume.patient_header['PatientName']['Alphabetic']
                 if multiseries_part:
                     if multiseries_finished is not None:
                         # a multiseries is finished, we can concatenate
