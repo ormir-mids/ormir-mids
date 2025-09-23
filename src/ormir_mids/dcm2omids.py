@@ -50,20 +50,28 @@ def parse_list_expression(list_expression):
     return [start + i * step for i in range(n_values)]
 
 
-def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, session='', series_number=False, save_patient_json=True, save_extra_json=True):
+def convert_dicom_to_ormirmids(input_folder, output_folder,  recursive=True, session='', series_number=False,
+                               save_patient_json=True, save_extra_json=True, **kwargs):
     """
     Convert DICOM to ORMIR-MIDS format.
     
     Parameters:
     - input_folder (str): Path to the input folder with DICOM files.
     - output_folder (str): Path to the output folder where results will be saved.
-    - anonymize (str): Pseudonym for patient name (default: 'anon').
     - recursive (bool): Whether to recurse into subfolders (default: True).
+    - **kwargs:
+        - anonymize (str): Pseudonym for patient name (default: 'anon').
     """
     
     inputDir = input_folder
     outputDir = output_folder
-    ANON_NAME = anonymize
+    if 'anonymize' in kwargs:
+        anonymize = kwargs['anonymize']
+        if anonymize is None:
+            anonymize = 'anon'
+        ANON_NAME = anonymize
+    else:
+        ANON_NAME = None
     RECURSIVE = recursive
     ADD_SERIES_NUMBER = series_number
     concat_flag = False
@@ -180,7 +188,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
             if ANON_NAME:
                 patient_name = ANON_NAME
             else:
-                patient_name = med_volume.patient_header['PatientName']
+                patient_name = med_volume.patient_header['PatientName']['Alphabetic']
             output_path = pathlib.Path(outputDir) / os.path.dirname(converter_class.get_file_path(patient_name, session))
             output_path.mkdir(parents=True, exist_ok=True)
             if multiseries_part:
@@ -244,7 +252,8 @@ def main():
     parser = argparse.ArgumentParser(description='Convert DICOM to ORMIR-MIDS format')
     parser.add_argument('input_folder', type=str, help='Input folder')
     parser.add_argument('output_folder', type=str, help='Output folder')
-    parser.add_argument('--anonymize', '-a', const='anon', metavar='pseudo_name', dest='anonymize', type=str, nargs = '?', help='Use the pseudo_name (default: anon) as patient name')
+    parser.add_argument('--anonymize', '-a', const='anon', metavar='pseudo_name', dest='anonymize', type=str,
+                        nargs = '?', help='Use the pseudo_name (default: anon) as patient name')
     parser.add_argument('--recursive', '-r', action='store_true', help='Recurse into subfolders')
     parser.add_argument('--series-number', '-s', action='store_true', help='Add series number to file name')
     parser.add_argument('--disable-patient-json', '-p', action='store_true', help='Avoid saving patient json file')
