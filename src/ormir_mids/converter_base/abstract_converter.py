@@ -39,9 +39,12 @@ class Converter(ABC):
         pass
 
     @classmethod
-    @abstractmethod
-    def get_file_name(cls, subject_id: str):
-        pass
+    def get_file_name(cls, subject_id: str, session_id: str = None):
+        return f'sub-{subject_id}' + (f'_ses-{session_id}' if session_id else '') + cls.get_suffix()
+
+    @classmethod
+    def get_suffix(cls):
+        return ''
 
     @classmethod
     @abstractmethod
@@ -54,8 +57,12 @@ class Converter(ABC):
         pass
 
     @classmethod
-    def get_file_path(cls, subject_id):
-        return os.path.join(subject_id, cls.get_directory(), cls.get_file_name(subject_id))
+    def get_file_path(cls, subject_id, session_id=None):
+        file_path = f'sub-{subject_id}'
+        if session_id:
+            file_path = os.path.join(file_path, f'ses-{session_id}')
+        file_path = os.path.join(file_path, cls.get_directory(), cls.get_file_name(subject_id, session_id))
+        return file_path
 
     @classmethod
     def find(cls, path):

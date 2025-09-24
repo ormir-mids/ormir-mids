@@ -97,8 +97,8 @@ class CTConverter(Converter):
         return 'ct-edi'
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_ct')
+    def get_suffix(cls):
+        return '_ct'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -126,8 +126,8 @@ class PCCTConverter(Converter):
         return 'ct-pc'
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_pcct')
+    def get_suffix(cls):
+        return '_pcct'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -158,8 +158,8 @@ class ScancoConverter(Converter):
         return "ct-hrpqct"
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f"{subject_id}_hrpqct")
+    def get_suffix(cls):
+        return '_hrpqct'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):

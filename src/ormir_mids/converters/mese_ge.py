@@ -17,8 +17,8 @@ class MeSeConverterGEMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_mese')
+    def get_suffix(cls):
+        return '_MESE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):

@@ -158,8 +158,8 @@ class MeGreConverterSiemensMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre')
+    def get_suffix(cls):
+        return '_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -214,8 +214,8 @@ class MeGreConverterSiemensPhase(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_ph')
+    def get_suffix(cls):
+        return '_part-phase_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -263,8 +263,8 @@ class MeGreConverterSiemensReal(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_real')
+    def get_suffix(cls):
+        return '_part-real_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -309,8 +309,8 @@ class MeGreConverterSiemensImaginary(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_imag')
+    def get_suffix(cls):
+        return '_part-imag_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -352,8 +352,8 @@ class MeGreConverterSiemensReconstructedMap(Converter):
         return os.path.join('mr-quant')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_reco')
+    def get_suffix(cls):
+        return '_MEGRE_RECO'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):

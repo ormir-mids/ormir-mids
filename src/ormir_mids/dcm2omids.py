@@ -50,7 +50,7 @@ def parse_list_expression(list_expression):
     return [start + i * step for i in range(n_values)]
 
 
-def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, series_number=False, save_patient_json=True, save_extra_json=True):
+def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, session='', series_number=False, save_patient_json=True, save_extra_json=True):
     """
     Convert DICOM to ORMIR-MIDS format.
     
@@ -157,15 +157,17 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
         if not compatible_dataset:
             return False
 
+        converted = False
+
         # if the converter_class is compatible, check its children
         # try converting the dataset with each child converter as the same dataset may be compatible with multiple converters
         for child_converter in converter_class.get_children():
             try:
-                convert_recursive(child_converter, med_volume)
+                converted = convert_recursive(child_converter, med_volume) or converted
             except Exception as e:
                 pass
 
-        # if we reach here, the converter_class is compatible but none of its children are. Use it.
+        # After all the children, try the base class too.
         if multiseries_part == converter_class.is_multiseries():
             try:
                 converted_volume = converter_class.convert_dataset(med_volume)
@@ -174,13 +176,13 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                 converted_volume = None
             if converted_volume is None:
                 # This class cannot convert datasets, it's just a dependency class
-                return False
-            output_path = pathlib.Path(outputDir) / converter_class.get_directory()
-            output_path.mkdir(parents=True, exist_ok=True)
+                return converted
             if ANON_NAME:
                 patient_name = ANON_NAME
             else:
                 patient_name = med_volume.patient_header['PatientName']
+            output_path = pathlib.Path(outputDir) / os.path.dirname(converter_class.get_file_path(patient_name, session))
+            output_path.mkdir(parents=True, exist_ok=True)
             if multiseries_part:
                 if multiseries_finished is not None:
                     # a multiseries is finished, we can concatenate
@@ -207,7 +209,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
             print('Volume', med_volume.path, 'saved with', converter_class.get_name())
             return True # we successfully converted the volume
 
-        return False # this converter tree is not compatible with the volume
+        return converted # return if any child converted the volume
 
     for med_volume in med_volume_list:
         multiseries_part = False
@@ -247,6 +249,8 @@ def main():
     parser.add_argument('--series-number', '-s', action='store_true', help='Add series number to file name')
     parser.add_argument('--disable-patient-json', '-p', action='store_true', help='Avoid saving patient json file')
     parser.add_argument('--disable-extra-json', '-e', action='store_true', help='Avoid saving extra json file')
+    parser.add_argument('--session', metavar='session_id', type=str, nargs=1,
+                        help='Specify the session ID to use (default: none)')
 
     args = parser.parse_args()
 
@@ -255,7 +259,11 @@ def main():
     ANON_NAME = args.anonymize
     RECURSIVE = args.recursive
     ADD_SERIES_NUMBER = args.series_number
-    convert_dicom_to_ormirmids(inputDir, outputDir, ANON_NAME, RECURSIVE, ADD_SERIES_NUMBER, not args.disable_patient_json, not args.disable_extra_json)
+    if args.session:
+        SESSION = args.session[0]
+    else:
+        SESSION = None
+    convert_dicom_to_ormirmids(inputDir, outputDir, ANON_NAME, RECURSIVE, SESSION, ADD_SERIES_NUMBER, not args.disable_patient_json, not args.disable_extra_json)
 
 
 # if __name__ == "__main__":

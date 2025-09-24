@@ -98,8 +98,8 @@ class MeSeConverterPhilipsMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_mese')
+    def get_suffix(cls):
+        return '_MESE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -126,8 +126,8 @@ class MeSeConverterPhilipsPhase(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_mese_ph')
+    def get_suffix(cls):
+        return '_part-phase_MESE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -155,8 +155,8 @@ class MeSeConverterPhilipsReconstructedMap(Converter):
         return os.path.join('mr-quant')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_t2')
+    def get_suffix(cls):
+        return '_T2'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):

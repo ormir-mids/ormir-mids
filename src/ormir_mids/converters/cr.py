@@ -29,8 +29,8 @@ class CrConverter(Converter):
         return os.path.join('rx')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_cr')
+    def get_suffix(cls):
+        return '_cr'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):

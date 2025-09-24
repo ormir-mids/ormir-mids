@@ -17,8 +17,8 @@ class DESSConverterSiemensMagnitude(Converter):
         return 'mr-anat'
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_DESS')
+    def get_suffix(cls):
+        return '_DESS'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):

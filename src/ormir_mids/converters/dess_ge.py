@@ -77,8 +77,8 @@ class DESSConverterGECombined(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_dess')
+    def get_suffix(cls):
+        return '_DESS'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -112,8 +112,8 @@ class DESSConverterGEFid(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_dess-fid')
+    def get_suffix(cls):
+        return '_DESS-FID'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -147,8 +147,8 @@ class DESSConverterGEEcho(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-            return os.path.join(f'{subject_id}_dess-echo')
+    def get_suffix(cls):
+            return '_DESS_ECHO'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
