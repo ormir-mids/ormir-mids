@@ -96,7 +96,7 @@ class CTConverter(Converter):
             return False
     
         ima_type_list = get_raw_tag_value(med_volume, '00080008')
-        if "COUNT" in ima_type_list:
+        if any("COUNT" in item for item in ima_type_list):
             return False
 
         _manufacturer = get_raw_tag_value(med_volume, '00080070')[0]
@@ -136,7 +136,8 @@ class PCCTConverter(Converter):
             return False
 
         ima_type_list = get_raw_tag_value(med_volume, '00080008')
-        if not "COUNT" in ima_type_list:
+        
+        if not any("COUNT" in item for item in ima_type_list):
             return False
 
         return True
