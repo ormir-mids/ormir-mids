@@ -130,11 +130,14 @@ def headers_to_dicts(header_list):
     Returns:
         (dict, dict): the meta and the header dictionaries
 
-    """
+    """  
     if type(header_list) != list:
         header_list = header_list.squeeze().tolist()
 
     json_header_list = []
+    if isinstance(header_list, pydicom.dataset.FileDataset): # this is mainly for CR as there is only one image (and header) file
+         header_list = [header_list]
+
     for h in header_list:
         meta_header = h.file_meta.to_json_dict()
         # the following should already be in the json dict
