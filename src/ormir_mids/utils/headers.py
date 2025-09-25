@@ -287,7 +287,8 @@ def separate_headers(raw_header_dict):
     process_dict(bids_dict, defined_tags)
 
     try:
-        if "CT" in bids_dict.get("Modality", ""):
+        modality = bids_dict.get("Modality", "")
+        if any(m in modality for m in ["CT", "CR", "DX", "US"]):
             # CT scanners do not have a PhaseEncodingDirection tag
             pass
         else:
