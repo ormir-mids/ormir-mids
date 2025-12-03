@@ -101,6 +101,7 @@ patient_tags = TagDefinitionDict({
 defined_tags = TagDefinitionDict({
     '00180081': 'EchoTime',
     '00189082': 'EchoTime',
+    '00180080': 'RepetitionTime',
     '00181314': ('FlipAngle', 'RefocusingFlipAngle'),
 
     # standard BIDS recommended
