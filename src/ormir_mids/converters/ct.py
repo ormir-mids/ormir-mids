@@ -84,7 +84,7 @@ class CTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'ct-edi'
+        return 'ct'
 
     @classmethod
     def get_file_name(cls, subject_id: str):
@@ -124,7 +124,7 @@ class PCCTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'ct-pc'
+        return 'ct'
 
     @classmethod
     def get_file_name(cls, subject_id: str):
@@ -164,7 +164,7 @@ class ScancoConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return "ct-hrpqct"
+        return "ct"
 
     @classmethod
     def get_file_name(cls, subject_id: str):
