@@ -1,6 +1,7 @@
 import os
 
-from .abstract_converter import Converter
+from .PhilipsMR import PhilipsMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
@@ -14,8 +15,6 @@ def _is_megre_philips(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is a MEGRE Philips dataset, False otherwise.
     """
-    if 'PHILIPS'.lower() not in get_manufacturer(med_volume).lower():
-        return False
 
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
     echo_times_list = med_volume.omids_header['EchoTime']
@@ -102,6 +101,18 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
+class MeGreConverterPhilipsRoot(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Philips_Root'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_megre_philips(med_volume)
+
+MeGreConverterPhilipsRoot.set_parent(PhilipsMRConverter)
+
 class MeGreConverterPhilipsMagnitude(Converter):
 
     @classmethod
@@ -113,14 +124,11 @@ class MeGreConverterPhilipsMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre')
+    def get_suffix(cls):
+        return '_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_philips(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 0)
 
     @classmethod
@@ -153,14 +161,11 @@ class MeGreConverterPhilipsPhase(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_ph')
+    def get_suffix(cls):
+        return '_part-phase_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_philips(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 1)
 
     @classmethod
@@ -194,14 +199,11 @@ class MeGreConverterPhilipsReal(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_real')
+    def get_suffix(cls):
+        return '_part-real_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_philips(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 2)
 
     @classmethod
@@ -233,14 +235,11 @@ class MeGreConverterPhilipsImaginary(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_imag')
+    def get_suffix(cls):
+        return '_part-imag_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_philips(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 3)
 
     @classmethod
@@ -273,13 +272,11 @@ class MeGreConverterPhilipsReconstructedMap(Converter):
         return os.path.join('mr-quant')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_reco')
+    def get_suffix(cls):
+        return '_MEGRE_RECO'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'PHILIPS'.lower() not in get_manufacturer(med_volume).lower():
-            return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
         if 'RM' in scanning_sequence_list:
@@ -292,3 +289,9 @@ class MeGreConverterPhilipsReconstructedMap(Converter):
         med_volume_out = slice_volume_3d(med_volume, indices['reco'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         return med_volume_out
+
+MeGreConverterPhilipsMagnitude.set_parent(MeGreConverterPhilipsRoot)
+MeGreConverterPhilipsPhase.set_parent(MeGreConverterPhilipsRoot)
+MeGreConverterPhilipsReal.set_parent(MeGreConverterPhilipsRoot)
+MeGreConverterPhilipsImaginary.set_parent(MeGreConverterPhilipsRoot)
+MeGreConverterPhilipsReconstructedMap.set_parent(PhilipsMRConverter)

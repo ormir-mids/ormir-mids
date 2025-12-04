@@ -1,7 +1,8 @@
 import math
 import os
 
-from .abstract_converter import Converter
+from .PhilipsMR import PhilipsMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
@@ -18,8 +19,6 @@ def _is_mese_philips(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is a MESE Philips dataset, False otherwise.
     """
-    if 'PHILIPS' not in get_manufacturer(med_volume):
-        return False
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
     echo_times_list = med_volume.omids_header['EchoTime']
 
@@ -76,6 +75,18 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
+class MeSeConverterPhilipsRoot(Converter):
+    @classmethod
+    def get_name(cls):
+        return 'MESE_Philips_Root'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_mese_philips(med_volume)
+
+
+MeSeConverterPhilipsRoot.set_parent(PhilipsMRConverter)
+
 class MeSeConverterPhilipsMagnitude(Converter):
 
     @classmethod
@@ -87,14 +98,11 @@ class MeSeConverterPhilipsMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_mese')
+    def get_suffix(cls):
+        return '_MESE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_mese_philips(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 'MAGNITUDE')
 
     @classmethod
@@ -118,14 +126,11 @@ class MeSeConverterPhilipsPhase(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_mese_ph')
+    def get_suffix(cls):
+        return '_part-phase_MESE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_mese_philips(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 'PHASE')
 
     @classmethod
@@ -150,13 +155,11 @@ class MeSeConverterPhilipsReconstructedMap(Converter):
         return os.path.join('mr-quant')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_t2')
+    def get_suffix(cls):
+        return '_T2'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'PHILIPS' not in get_manufacturer(med_volume):
-            return False
         scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
         if 'RM' in scanning_sequence_list:
@@ -170,3 +173,6 @@ class MeSeConverterPhilipsReconstructedMap(Converter):
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
         return med_volume_out
 
+MeSeConverterPhilipsMagnitude.set_parent(MeSeConverterPhilipsRoot)
+MeSeConverterPhilipsPhase.set_parent(MeSeConverterPhilipsRoot)
+MeSeConverterPhilipsReconstructedMap.set_parent(PhilipsMRConverter)

@@ -76,19 +76,19 @@ def test_download(downloaded_data):
 def test_convert(converted_data):
     """Test that conversion created the expected directory"""
     assert (
-        converted_data / "ct-hrpqct"
+        converted_data / 'sub-anon' / "ct-hrpqct"
     ).exists(), f"Missing ct-hrpqct directory. Available directories: {list(converted_data.iterdir())}"
 
 
 def test_json(converted_data):
     """Test the JSON metadata"""
-    omids_dir = converted_data / "ct-hrpqct"
+    omids_dir = converted_data / 'sub-anon' / "ct-hrpqct"
     assert (
-        omids_dir / "anon_hrpqct.json"
+        omids_dir / "sub-anon_hrpqct.json"
     ).exists(), f"JSON file not found. Directory contents: {list(omids_dir.iterdir())}"
 
     # Check manufacturer and modality
-    with open(omids_dir / "anon_hrpqct.json", "r") as f:
+    with open(omids_dir / "sub-anon_hrpqct.json", "r") as f:
         data = json.load(f)
     assert data["Manufacturer"] == "SCANCO Medical"
     assert data["Modality"] == "CT"
@@ -96,8 +96,8 @@ def test_json(converted_data):
 
 def test_nii(converted_data):
     """Test the NIfTI file"""
-    omids_dir = converted_data / "ct-hrpqct"
-    nii_file = omids_dir / "anon_hrpqct.nii.gz"
+    omids_dir = converted_data / 'sub-anon' / "ct-hrpqct"
+    nii_file = omids_dir / "sub-anon_hrpqct.nii.gz"
     assert (
         nii_file.exists()
     ), f"NIfTI file not found. Directory contents: {list(omids_dir.iterdir())}"

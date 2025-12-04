@@ -1,6 +1,7 @@
 import os
 
-from .abstract_converter import Converter
+from .GEMR import GEMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 import numpy as np
@@ -19,9 +20,6 @@ def _is_megre_ge(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is a MEGRE GE dataset, False otherwise.
     """
-    if 'GE' not in get_manufacturer(med_volume):
-        return False
-
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
     echo_times_list = med_volume.omids_header['EchoTime']
     echo_times_unique = set(echo_times_list)
@@ -30,6 +28,8 @@ def _is_megre_ge(med_volume: MedicalVolume):
     if n_echo_times > 1 and 'GR' in scanning_sequence_list:
         return True
     return False
+
+
 
 
 def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
@@ -106,6 +106,19 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
+class MeGreConverterGERoot(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_GE_Root'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_megre_ge(med_volume)
+
+
+MeGreConverterGERoot.set_parent(GEMRConverter)
+
 class MeGreConverterGEMagnitude(Converter):
 
     @classmethod
@@ -117,14 +130,11 @@ class MeGreConverterGEMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre')
+    def get_suffix(cls):
+        return '_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 0)
 
     @classmethod
@@ -161,14 +171,11 @@ class MeGreConverterGEPhase(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_ph')
+    def get_suffix(cls):
+        return '_part-phase_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 1)
 
     @classmethod
@@ -206,14 +213,11 @@ class MeGreConverterGEReal(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_real')
+    def get_suffix(cls):
+        return '_part-real_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 2)
 
     @classmethod
@@ -248,14 +252,11 @@ class MeGreConverterGEImaginary(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_imag')
+    def get_suffix(cls):
+        return '_part-imag_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_ge(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 3)
 
     @classmethod
@@ -291,13 +292,11 @@ class MeGreConverterGEReconstructedMap(Converter):
         return os.path.join('mr-quant')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_reco')
+    def get_suffix(cls):
+        return '_MEGRE_RECO'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'GE' not in get_manufacturer(med_volume):
-            return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
         if ('RM' in scanning_sequence_list
@@ -312,3 +311,9 @@ class MeGreConverterGEReconstructedMap(Converter):
         med_volume_out.omids_header['PulseSequenceType'] \
             = 'Multi-echo Gradient Echo'
         return med_volume_out
+
+MeGreConverterGEReal.set_parent(MeGreConverterGERoot)
+MeGreConverterGEImaginary.set_parent(MeGreConverterGERoot)
+MeGreConverterGEMagnitude.set_parent(MeGreConverterGERoot)
+MeGreConverterGEPhase.set_parent(MeGreConverterGERoot)
+MeGreConverterGEReconstructedMap.set_parent(GEMRConverter)
