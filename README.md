@@ -70,7 +70,7 @@ For further clarification, see the [demo notebook](https://github.com/ormir-mids
 
 To learn how to use ORMIR-MIDS:
 - Read the [ORMIR-MIDS website](https://ormir-mids.github.io/) for background information about the standard and the package
-- Run the [demo notebook](https://github.com/ormir-mids/ormir-mids/blob/main/jupyter/ormir-mids-qmski24.ipynb) either locally or on [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ormir-mids/ormir-mids.git/main?labpath=jupyter%2Formir-mids-qmski24.ipynb)    
+- Run the [demo notebook](https://github.com/ormir-mids/ormir-mids/blob/main/jupyter/ormir-mids-dcm2omids.ipynb) either locally or on [![Binder](https://gesis.mybinder.org/badge_logo.svg)](https://gesis.mybinder.org/v2/gh/ormir-mids/ormir-mids.git/main?urlpath=%2Fdoc%2Ftree%2Fjupyter%2Formir-mids-dcm2omids.ipynb))    
 
 
 ---
@@ -78,7 +78,7 @@ To learn how to use ORMIR-MIDS:
 
 To contribute to ORMIR-MIDS:
 - Install ORMIR-MIDS for development (see [above](#Development-installation))
-- Create a branch and make your changes and/or additions. If you want to coordinate the development with the main mainteners, write [Donnie Cameron](https://www.linkedin.com/in/donnie-cameron-b76bbb63/?originalSubdomain=uk)
+- Create a branch and make your changes and/or additions. If you want to coordinate the development with the main maintainers, write to [Donnie Cameron](https://www.linkedin.com/in/donnie-cameron-b76bbb63/?originalSubdomain=uk)
 or [Francesco Santini](https://www.francescosantini.com/)
 - Commit your changes and send a pull request
 
@@ -100,7 +100,7 @@ When using ORMIR-MIDS, please cite the following abstract (paper coming in the n
 
 
 --- 
-## License 
+## Licence 
 ORMIR-MIDS is released under Apache 2.0
 
 

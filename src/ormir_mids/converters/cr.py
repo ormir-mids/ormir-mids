@@ -1,8 +1,8 @@
 import os
 
-from .abstract_converter import Converter
-from ..dosma_io import MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_modality
+from ..converter_base.abstract_converter import Converter, RootConverter
+from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
+from ..utils.headers import get_raw_tag_value, slice_volume_3d, get_modality
 
 
 def _is_cr(med_volume: MedicalVolume):
@@ -29,8 +29,8 @@ class CrConverter(Converter):
         return os.path.join('rx')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_cr')
+    def get_suffix(cls):
+        return '_cr'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -39,12 +39,13 @@ class CrConverter(Converter):
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
-        indices = _get_image_indices(med_volume)
-        med_volume_out = slice_volume_3d(med_volume, 1) # This will give an error, slices list is just 1?
-        # add the important headerds here
-        med_volume_out.bids_header['KVP'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume_out.bids_header['ExposureTime'] = get_raw_tag_value(med_volume, '00181150')[0]
-        med_volume_out.bids_header['X-RayTubeCurrent'] = get_raw_tag_value(med_volume, '00181151')[0]
-        med_volume_out.bids_header['Exposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
-        return med_volume_out
+        # add the important headerds here
+        med_volume.omids_header['KVP'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume.omids_header['ExposureTime'] = get_raw_tag_value(med_volume, '00181150')[0]
+        med_volume.omids_header['X-RayTubeCurrent'] = get_raw_tag_value(med_volume, '00181151')[0]
+        med_volume.omids_header['Exposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+
+        return med_volume
+
+CrConverter.set_parent(RootConverter)

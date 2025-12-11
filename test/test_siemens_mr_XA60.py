@@ -1,0 +1,59 @@
+import pytest
+from ormir_mids.dcm2omids import convert_dicom_to_ormirmids
+
+from helpers import *
+
+@pytest.fixture(scope="session")
+def test_dirs(tmp_path_factory):
+    data_dir = tmp_path_factory.mktemp("test_data")
+    print(data_dir)
+    output_dir = tmp_path_factory.mktemp("converted_data")
+    print(output_dir)
+    yield data_dir, output_dir
+    #shutil.rmtree(data_dir)
+    #shutil.rmtree(output_dir)
+
+def test_download(test_dirs):
+    data_dir, output_dir = test_dirs
+    url = r'https://zenodo.org/records/14781472/files/ORMIR-MIDS_SampleData_MR_Siemens_XA60.zip?download=1'
+    download_and_extract(url, data_dir)
+    assert n_files_in_dir(data_dir) == 11
+
+def test_convert(test_dirs):
+    data_dir, output_dir = test_dirs
+    convert_dicom_to_ormirmids(data_dir, output_dir, anonymize='anon', recursive=True, series_number=False, save_patient_json=True, save_extra_json=True)
+    assert (output_dir / 'sub-anon' / 'mr-anat').exists()
+    assert n_files_in_dir(output_dir / 'sub-anon' / 'mr-anat') == 16
+
+def test_megre_json(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert check_echo_times(omids_dir / 'sub-anon_MEGRE.json', [1.23, 2.46])
+    assert check_echo_times(omids_dir / 'sub-anon_part-phase_MEGRE.json', [1.23, 2.46])
+
+def test_mese_json(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert check_echo_times(omids_dir / 'sub-anon_MESE.json', [11.0, 22.0, 33.0, 44.0, 55.0, 66.0, 77.0, 88.0,
+                                                       99.0, 110.0, 121.0, 132.0, 143.0, 154.0, 165.0, 176.0, 187.0])
+
+def test_dess_json(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert load_json(omids_dir / 'sub-anon_DESS.json')["PulseSequenceType"] == "DESS"
+
+def test_megre_nii(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert check_nib_shape(omids_dir / 'sub-anon_MEGRE.nii.gz', (104, 256, 150, 2))
+    assert check_nib_shape(omids_dir / 'sub-anon_part-phase_MEGRE.nii.gz', (104, 256, 150, 2))
+
+def test_mese_nii(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert check_nib_shape(omids_dir / 'sub-anon_MESE.nii.gz', (128, 256, 8, 17))
+
+def test_dess_nii(test_dirs):
+    data_dir, output_dir = test_dirs
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert check_nib_shape(omids_dir / 'sub-anon_DESS.nii.gz', (256, 256, 60))

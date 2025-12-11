@@ -4,11 +4,18 @@ from bidict import bidict
 
 
 def list_to_item(x):
-    return x[0]
+    if isinstance(x, list):
+        if isinstance(x[0], str):
+            return '/'.join(x)
+        else:
+            return x[0]
 
 
 def item_to_list(x):
-    return [x]
+    if isinstance(x, str):
+        return x.split('/')
+    else:
+        return [x]
 
 
 class TagDefinitionDict(dict):
@@ -23,22 +30,27 @@ class TagDefinitionDict(dict):
 
     @staticmethod
     def __add_item(dictionary, source_tag, dest_tag):
+        def __set_or_append(dictionary, source_tag, dest_tag):
+            if source_tag in dictionary:
+                if isinstance(dictionary[source_tag], list):
+                    dictionary[source_tag].append(dest_tag)
+                else:
+                    dictionary[source_tag] = [dictionary[source_tag], dest_tag]
+            else:
+                dictionary[source_tag] = dest_tag
+
+
         if isinstance(source_tag, (list, tuple)):
             for tag in source_tag:
                 if isinstance(dest_tag, (list, tuple)):
-                    dictionary[tag] = dest_tag[0]
+                    __set_or_append(dictionary, tag, dest_tag[0])
                 else:
-                    dictionary[tag] = dest_tag
-            else:
-                if isinstance(dest_tag, (list, tuple)):
-                    dictionary[source_tag] = dest_tag[0]
-                else:
-                    dictionary[source_tag] = dest_tag
+                    __set_or_append(dictionary, tag, dest_tag)
         else:
             if isinstance(dest_tag, (list, tuple)):
-                dictionary[source_tag] = dest_tag[0]
+                __set_or_append(dictionary, source_tag, dest_tag[0])
             else:
-                dictionary[source_tag] = dest_tag
+                __set_or_append(dictionary, source_tag, dest_tag)
 
     def add_element(self, numerical_tag, named_tag, numerical_to_named_translator=list_to_item,
                     named_to_numerical_translator=item_to_list):
@@ -62,7 +74,10 @@ class TagDefinitionDict(dict):
         self.__add_item(self.translator_dict, tag, translator)
 
     def get_translator(self, tag):
-        return self.translator_dict[tag]
+        translator = self.translator_dict[tag]
+        if isinstance(translator, list):
+            return translator[0]
+        return translator
 
 
 patient_tags = TagDefinitionDict({
@@ -85,10 +100,13 @@ patient_tags = TagDefinitionDict({
 
 defined_tags = TagDefinitionDict({
     '00180081': 'EchoTime',
+    '00189082': 'EchoTime',
+    '00180080': 'RepetitionTime',
     '00181314': ('FlipAngle', 'RefocusingFlipAngle'),
 
     # standard BIDS recommended
     '00180020': 'ScanningSequence',
+    '00189008': 'ScanningSequence',
     '00180021': 'SequenceVariant',
     '00180022': 'ScanOptions',
     '00180024': 'SequenceName',
@@ -106,15 +124,35 @@ defined_tags = TagDefinitionDict({
     '00180095': 'PixelBandwidth',
     '00080070': 'Manufacturer',
     '00180084': 'ImagingFrequency',
+    '00189098': 'ImagingFrequency',
     '00180087': 'MagneticFieldStrength',
-    '0043102F': 'ImageType',  # GE private tag for complex data type
+    '0043102F': 'ImageTypeGE',  # GE private tag for complex data type
+    '00089208': 'ImageTypePhilips',  # Philips tag for complex data type
+    '00080008': 'ImageTypeSiemens',  # General tag for image type (use for all? Needs to be parsed)
+    '00181312': 'PhaseEncodingDirection',
 
     # Tags for CT
+    "00080060": 'Modality',
     '00180060': 'XRayEnergy',
     '00181152': 'XRayExposure',
-     
+
     # Tags for CR
     '00181150': 'ExposureTime',
-    '00181151': 'X-RayTubeCurrent'
+    '00181151': 'X-RayTubeCurrent',
+
+    # Tags for Scanco CT
+    # Standard DICOM tags
+    "00181153": "XRayExposure",
+    "00181210": "ConvolutionKernel",
+
+    # SCANCO rescale tags --> needed to calibrate image to BMD
+    "00281052": "RescaleIntercept",
+    "00281053": "RescaleSlope",
+    "00291000": "ScancoMuScaling",
+    "00291004": "ScancoDensitySlope",
+    "00291005": "ScancoDensityIntercept",
+    "00291006": "ScancoMuWater",
+
+    # TODO: DC-3T - Add relevant tags for MEGRE-Philips/Siemens and MESE-GE
 
 })

@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Project-related file
+data/
+omids_data/
+
 # Distribution / packaging
 .Python
 build/
@@ -129,3 +133,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+/ormir-mids-venv
+.DS_Store
+workspace.code-workspace
+.vscode/
+/dicom
