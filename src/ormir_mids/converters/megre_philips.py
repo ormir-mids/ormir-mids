@@ -1,4 +1,5 @@
 import os
+import numpy as np
 
 from .PhilipsMR import PhilipsMRConverter
 from ..converter_base.abstract_converter import Converter
@@ -186,7 +187,9 @@ class MeGreConverterPhilipsPhase(Converter):
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
-        med_volume_out.volume = (med_volume_out.volume - 2048).astype(np.float32) * np.pi / 2048
+        med_volume_out.volume = np.where(med_volume_out.volume != 0,
+                                         (med_volume_out.volume - 2048.) * np.pi / 2048.,
+                                         med_volume_out.volume).astype(np.float32)
 
         return med_volume_out
 
