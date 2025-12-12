@@ -22,7 +22,8 @@ def _is_mese_philips(med_volume: MedicalVolume):
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
     echo_times_list = med_volume.omids_header['EchoTime']
 
-    if isinstance(echo_times_list, list) and 'SE' in scanning_sequence_list:
+    if (isinstance(echo_times_list, list) and
+            ('SE' in scanning_sequence_list or 'SPIN' in scanning_sequence_list)):
         return True
     return False
 
@@ -65,9 +66,9 @@ def _get_image_indices(med_volume: MedicalVolume):
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
     for i in range(len(flat_ima_type)):
-        if (flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] == 'SE'):
+        if flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] in ['SE', 'SPIN']:
             ima_index['magnitude'].append(i)
-        elif (flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] == 'SE'):
+        elif flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] in ['SE', 'SPIN']:
             ima_index['phase'].append(i)
         elif scanning_sequence_list[i] == 'RM':
             ima_index['reco'].append(i)
