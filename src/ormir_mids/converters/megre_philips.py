@@ -25,8 +25,9 @@ def _is_megre_philips(med_volume: MedicalVolume):
     echo_times_unique = set(echo_times_list)
     n_echo_times = sum(TE > 0. for TE in echo_times_unique)
 
-    if n_echo_times > 1 and 'GR' in scanning_sequence_list:
+    if (scanning_sequence == 'GR' or scanning_sequence == 'GRADIENT') and n_echo_times > 1:
         return True
+
     return False
 
 
