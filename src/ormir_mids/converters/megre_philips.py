@@ -6,6 +6,9 @@ from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
 
 
+def get_raw_scanning_sequence(med_volume: MedicalVolume):
+    return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
+
 def _is_megre_philips(med_volume: MedicalVolume):
     """
     Check if the given MedicalVolume is a MEGRE Philips dataset.
@@ -16,7 +19,7 @@ def _is_megre_philips(med_volume: MedicalVolume):
         bool: True if the MedicalVolume is a MEGRE Philips dataset, False otherwise.
     """
 
-    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
+    scanning_sequence = med_volume.omids_header['ScanningSequence']
     echo_times_list = med_volume.omids_header['EchoTime']
     echo_times_unique = set(echo_times_list)
     n_echo_times = sum(TE > 0. for TE in echo_times_unique)
@@ -26,7 +29,7 @@ def _is_megre_philips(med_volume: MedicalVolume):
     return False
 
 
-def _test_ima_type(med_volume: MedicalVolume, ima_type: int):
+def _test_ima_type(med_volume: MedicalVolume, ima_type: str):
     """
     Test if the given MedicalVolume is of the given type.
     Args:
@@ -81,20 +84,20 @@ def _get_image_indices(med_volume: MedicalVolume):
     ima_type_list = get_raw_tag_value(med_volume, '00089208')  # DC-3T: Or 00080008 for Classic DICOM?
     flat_ima_type = [x for xs in ima_type_list for x in xs]
 
-    scanning_sequence_list = med_volume.omids_header['ScanningSequence']
-    # DCam - The below code causes errors. Remove?
-    #if ~isinstance(scanning_sequence_list, list):
-        #scanning_sequence_list = [scanning_sequence_list] * len(flat_ima_type)
+    scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
     for i in range(len(flat_ima_type)):
-        if flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] == 'GR':
-            ima_index['magnitude'].append(i)
-        elif flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] == 'GR':
-            ima_index['phase'].append(i)
-        elif flat_ima_type[i] == 'REAL' and scanning_sequence_list[i] == 'GR':
-            ima_index['real'].append(i)
-        elif flat_ima_type[i] == "IMAGINARY" and scanning_sequence_list[i] == 'GR':
-            ima_index['imaginary'].append(i)
+        # Consider ima_type only after splitting out acquired and reconstructed data.
+        # Some reconstructed maps show 'MAGNITUDE' or 'REAL' types
+        if scanning_sequence_list[i] != 'RM':
+            if flat_ima_type[i] == 'MAGNITUDE':
+                ima_index['magnitude'].append(i)
+            elif flat_ima_type[i] == 'PHASE':
+                ima_index['phase'].append(i)
+            elif flat_ima_type[i] == 'REAL':
+                ima_index['real'].append(i)
+            elif flat_ima_type[i] == "IMAGINARY":
+                ima_index['imaginary'].append(i)
         elif scanning_sequence_list[i] == 'RM':
             ima_index['reco'].append(i)
 
@@ -129,7 +132,7 @@ class MeGreConverterPhilipsMagnitude(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        return _test_ima_type(med_volume, 0)
+        return _test_ima_type(med_volume, 'MAGNITUDE')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -166,7 +169,7 @@ class MeGreConverterPhilipsPhase(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        return _test_ima_type(med_volume, 1)
+        return _test_ima_type(med_volume, 'PHASE')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -204,7 +207,7 @@ class MeGreConverterPhilipsReal(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        return _test_ima_type(med_volume, 2)
+        return _test_ima_type(med_volume, 'REAL')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -240,7 +243,7 @@ class MeGreConverterPhilipsImaginary(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        return _test_ima_type(med_volume, 3)
+        return _test_ima_type(med_volume, 'IMAGINARY')
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
