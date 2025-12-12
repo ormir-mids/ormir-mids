@@ -89,17 +89,14 @@ def _get_image_indices(med_volume: MedicalVolume):
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
     for i in range(len(flat_ima_type)):
-        # Consider ima_type only after splitting out acquired and reconstructed data.
-        # Some reconstructed maps show 'MAGNITUDE' or 'REAL' types
-        if scanning_sequence_list[i] != 'RM':
-            if flat_ima_type[i] == 'MAGNITUDE':
-                ima_index['magnitude'].append(i)
-            elif flat_ima_type[i] == 'PHASE':
-                ima_index['phase'].append(i)
-            elif flat_ima_type[i] == 'REAL':
-                ima_index['real'].append(i)
-            elif flat_ima_type[i] == "IMAGINARY":
-                ima_index['imaginary'].append(i)
+        if flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] in ['GR', 'GRADIENT']:
+            ima_index['magnitude'].append(i)
+        elif flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] in ['GR', 'GRADIENT']:
+            ima_index['phase'].append(i)
+        elif flat_ima_type[i] == 'REAL' and scanning_sequence_list[i] in ['GR', 'GRADIENT']:
+            ima_index['real'].append(i)
+        elif flat_ima_type[i] == "IMAGINARY" and scanning_sequence_list[i] in ['GR', 'GRADIENT']:
+            ima_index['imaginary'].append(i)
         elif scanning_sequence_list[i] == 'RM':
             ima_index['reco'].append(i)
 
