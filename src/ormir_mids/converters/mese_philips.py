@@ -1,6 +1,8 @@
 import math
 import os
 
+import numpy as np
+
 from .PhilipsMR import PhilipsMRConverter
 from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
@@ -140,7 +142,11 @@ class MeSeConverterPhilipsPhase(Converter):
         med_volume_out = slice_volume_3d(med_volume, indices['phase'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
         med_volume_out = group(med_volume_out, 'EchoTime')
-        med_volume_out.volume = (med_volume_out.volume - 2048) * math.pi / 2048 # convert to radians
+
+        med_volume_out.volume = np.where(med_volume_out.volume != 0,
+                                         (med_volume_out.volume - 2048.) * np.pi / 2048.,
+                                         med_volume_out.volume).astype(np.float32)
+
         med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
         return med_volume_out
 
