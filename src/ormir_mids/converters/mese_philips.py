@@ -1,6 +1,8 @@
 import math
 import os
 
+import numpy as np
+
 from .PhilipsMR import PhilipsMRConverter
 from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
@@ -22,7 +24,8 @@ def _is_mese_philips(med_volume: MedicalVolume):
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
     echo_times_list = med_volume.omids_header['EchoTime']
 
-    if isinstance(echo_times_list, list) and 'SE' in scanning_sequence_list:
+    if (isinstance(echo_times_list, list) and
+            ('SE' in scanning_sequence_list or 'SPIN' in scanning_sequence_list)):
         return True
     return False
 
@@ -65,9 +68,9 @@ def _get_image_indices(med_volume: MedicalVolume):
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
     for i in range(len(flat_ima_type)):
-        if (flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] == 'SE'):
+        if flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] in ['SE', 'SPIN']:
             ima_index['magnitude'].append(i)
-        elif (flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] == 'SE'):
+        elif flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] in ['SE', 'SPIN']:
             ima_index['phase'].append(i)
         elif scanning_sequence_list[i] == 'RM':
             ima_index['reco'].append(i)
@@ -139,7 +142,11 @@ class MeSeConverterPhilipsPhase(Converter):
         med_volume_out = slice_volume_3d(med_volume, indices['phase'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
         med_volume_out = group(med_volume_out, 'EchoTime')
-        med_volume_out.volume = (med_volume_out.volume - 2048) * math.pi / 2048 # convert to radians
+
+        med_volume_out.volume = np.where(med_volume_out.volume != 0,
+                                         (med_volume_out.volume - 2048.) * np.pi / 2048.,
+                                         med_volume_out.volume).astype(np.float32)
+
         med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
         return med_volume_out
 
