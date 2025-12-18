@@ -81,6 +81,7 @@ To contribute to ORMIR-MIDS:
 - Create a branch and make your changes and/or additions. If you want to coordinate the development with the main maintainers, write to [Donnie Cameron](https://www.linkedin.com/in/donnie-cameron-b76bbb63/?originalSubdomain=uk)
 or [Francesco Santini](https://www.francescosantini.com/)
 - Commit your changes and send a pull request
+- To write a new converter class, refer to the [Example Converter Class](https://github.com/ormir-mids/ormir-mids/blob/main/src/ormir_mids/converter_base/converter_template.py)
 
 
 ---
