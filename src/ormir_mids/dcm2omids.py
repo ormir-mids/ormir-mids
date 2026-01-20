@@ -50,7 +50,7 @@ def parse_list_expression(list_expression):
     return [start + i * step for i in range(n_values)]
 
 
-def convert_dicom_to_ormirmids(input_folder, output_folder,  recursive=True, session='', series_number=False,
+def convert_dicom_to_ormirmids(input_folder, output_folder, recursive=True, session='', series_number=False,
                                save_patient_json=True, save_extra_json=True, **kwargs):
     """
     Convert DICOM to ORMIR-MIDS format.
@@ -263,16 +263,24 @@ def main():
 
     args = parser.parse_args()
 
-    inputDir = args.input_folder
-    outputDir = args.output_folder
-    ANON_NAME = args.anonymize
-    RECURSIVE = args.recursive
-    ADD_SERIES_NUMBER = args.series_number
+    pos_args = (args.input_folder, args.output_folder)
+    kw_args = {
+        "recursive": args.recursive,
+        "series_number": args.series_number,
+        "save_patient_json": not args.disable_patient_json,
+        "save_extra_json": not args.disable_extra_json
+    }
+
     if args.session:
         SESSION = args.session[0]
     else:
         SESSION = None
-    convert_dicom_to_ormirmids(inputDir, outputDir, ANON_NAME, RECURSIVE, SESSION, ADD_SERIES_NUMBER, not args.disable_patient_json, not args.disable_extra_json)
+    kw_args['session'] = SESSION
+
+    if args.anonymize is not None:
+        kw_args['anonymize'] = args.anonymize
+
+    convert_dicom_to_ormirmids(*pos_args, **kw_args)
 
 
 # if __name__ == "__main__":
