@@ -6,7 +6,7 @@ import numpy as np
 from .PhilipsMR import PhilipsMRConverter
 from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
+from ..utils.headers import get_raw_tag_value, group, slice_volume_3d
 
 
 def get_raw_scanning_sequence(med_volume: MedicalVolume):
@@ -169,7 +169,7 @@ class MeSeConverterPhilipsReconstructedMap(Converter):
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
         scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
-        if 'RM' in scanning_sequence_list:
+        if 'RM' in scanning_sequence_list and ('SPIN' in scanning_sequence_list or 'SE' in scanning_sequence_list):
             return True
         return False
 
