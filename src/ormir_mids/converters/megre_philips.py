@@ -254,7 +254,7 @@ class MeGreConverterPhilipsImaginary(Converter):
 
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
-        echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
+        echo_times_nu = [echo_times_list[i] for i in indices['imaginary']]
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
