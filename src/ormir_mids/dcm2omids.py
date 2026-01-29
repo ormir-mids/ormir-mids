@@ -11,6 +11,12 @@ import pathlib
 
 import argparse
 
+def parse_patient_name(patient_name):
+    try:
+        return patient_name['Alphabetic']
+    except KeyError:
+        return str(patient_name)
+
 def parse_list_expression(list_expression):
     """
     Parse a list expression in the format [start:increment:end]. If the end is prefixed with 'n', then this number
@@ -180,7 +186,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
             if ANON_NAME:
                 patient_name = ANON_NAME
             else:
-                patient_name = med_volume.patient_header['PatientName']
+                patient_name = parse_patient_name(med_volume.patient_header['PatientName'])
             output_path = pathlib.Path(outputDir) / os.path.dirname(converter_class.get_file_path(patient_name, session))
             output_path.mkdir(parents=True, exist_ok=True)
             if multiseries_part:
