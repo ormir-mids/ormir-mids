@@ -10,8 +10,8 @@ Specifically, the MedicalVolumes returned have four additional attributes:
     - meta_header: a dictionary containing the meta DICOM information
 """
 from .utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from .utils.io import load_dicom, save_bids, load_dicom_with_subfolders, save_dicom, find_omids, save_omids
+from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders, save_dicom, find_omids, save_omids
 
-__all__ = ['load_dicom', 'save_bids', 'load_dicom_with_subfolders', 'save_dicom', 'find_omids']
+__all__ = ['load_dicom', 'save_omids', 'load_dicom_with_subfolders', 'save_dicom', 'find_omids', 'MedicalVolume']
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
