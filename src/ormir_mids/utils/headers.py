@@ -610,7 +610,7 @@ def ungroup(medical_volume):
     return medical_volume_out
 
 
-def dicom_volume_to_bids(medical_volume):
+def dicom_volume_to_mids(medical_volume):
     """
     Converts a medical volume to a BIDS medical volume by creating and attaching the appropriate BIDS headers.
     Parameters:
@@ -630,8 +630,9 @@ def dicom_volume_to_bids(medical_volume):
     setattr(medical_volume, 'extra_header', raw_header_dict)
     return medical_volume
 
+dicom_volume_to_bids = dicom_volume_to_mids
 
-def bids_volume_to_dicom(medical_volume, new_series=False):
+def mids_volume_to_dicom(medical_volume, new_series=False):
     """
     Converts a BIDS medical volume to a medical volume by creating and attaching the appropriate DICOM headers.
 
@@ -662,6 +663,7 @@ def bids_volume_to_dicom(medical_volume, new_series=False):
 
     return new_volume
 
+bids_volume_to_dicom = mids_volume_to_dicom
 
 def reduce(med_volume, index):
     """

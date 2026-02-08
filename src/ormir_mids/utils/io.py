@@ -17,12 +17,15 @@ def load_dicom(path, group_by = None):
         MedicalVolume with muscle-bids headers
     """
     dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', ignore_ext=True)
-    medical_volume = dicom_reader.load(path)[0]
-    setattr(medical_volume, 'path', path)
-    new_volume = headers.dicom_volume_to_bids(medical_volume)
-    if group_by is not None:
-        new_volume = headers.group(new_volume, group_by)
-    return new_volume
+    volume_list = dicom_reader.load(path)
+    out = []
+    for medical_volume in volume_list:
+        setattr(medical_volume, 'path', path)
+        new_volume = headers.dicom_volume_to_mids(medical_volume)
+        if group_by is not None:
+            new_volume = headers.group(new_volume, group_by)
+        out.append(new_volume)
+    return out
 
 
 def load_dicom_with_subfolders(path):
@@ -55,7 +58,7 @@ def load_dicom_with_subfolders(path):
     out = []
     for volume in med_volumes:
         try:
-            new_volume = headers.dicom_volume_to_bids(volume)
+            new_volume = headers.dicom_volume_to_mids(volume)
         except:
             print("Warning: could not convert volume")
             continue
@@ -75,7 +78,7 @@ def save_dicom(path, medical_volume, new_series = True):
     Returns:
         None
     """
-    new_volume = headers.bids_volume_to_dicom(medical_volume, new_series)
+    new_volume = headers.mids_volume_to_dicom(medical_volume, new_series)
     #print(new_volume.headers().shape)
     dicom_writer = DicomWriter(num_workers=0)
     dicom_writer.save(new_volume, path)

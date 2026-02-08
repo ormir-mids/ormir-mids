@@ -78,7 +78,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
     if RECURSIVE:
         med_volume_list = load_dicom_with_subfolders(inputDir)
     else:
-        med_volume_list = [load_dicom(inputDir)]
+        med_volume_list = load_dicom(inputDir)
 
     print("Data loaded")
 
