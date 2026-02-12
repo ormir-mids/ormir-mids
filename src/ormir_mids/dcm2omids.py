@@ -5,7 +5,7 @@ import os
 import sys
 
 from .converters import RootConverter
-from .utils.headers import concatenate_volumes_3d, group, get_raw_tag_value
+from .utils.headers import concatenate_volumes_3d, group, get_raw_tag_value, force_change_header_value
 from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders
 import pathlib
 
@@ -23,8 +23,9 @@ def parse_list_expression(list_expression):
     of values are generated. Note: end is included.
 
     Examples:
-        [1:2:11] -> [1, 3, 5, 7, 9, 11]
-        [1:2:n3] -> [1, 3, 5]
+        "[1:2:11]" -> [1, 3, 5, 7, 9, 11]
+        "[1:2:n3]" -> [1, 3, 5]
+        "[1,2,3]" -> [1, 2, 3]
 
     Args:
         list_expression: a string
@@ -32,6 +33,26 @@ def parse_list_expression(list_expression):
     Returns:
         a list of integers or floats
     """
+    # Check if this is a comma-separated list
+    if ',' in list_expression:
+        m = re.match(r'\[\s*([^\]]+)\s*\]', list_expression)
+        if m is not None:
+            values_str = m.group(1).split(',')
+            values = []
+            for val in values_str:
+                val = val.strip()
+                # Try to parse as int first, then float
+                try:
+                    values.append(int(val))
+                except ValueError:
+                    try:
+                        values.append(float(val))
+                    except ValueError:
+                        raise ValueError(f'Invalid value in list expression: {val}')
+            return values
+        else:
+            raise ValueError('Invalid list expression')
+
     # this is an integer expression
     m = re.match(r'\[\s*(\d+)\s*:\s*(\d+)\s*:\s*([nN]?\d+)\s*]', list_expression)
     if m is not None:
@@ -114,14 +135,30 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
     # parse overrides
     overrides = {}
     for series_number, override_dict in raw_overrides.items():
-        if series_number.startswith('['):
-            try:
-                series_number_list = parse_list_expression(series_number)
-            except ValueError:
-                print("Error parsing series number in overrides")
+        try:
+            series_number_list = [int(series_number)]
+        except ValueError:
+            if isinstance(series_number, str):
+                if series_number.startswith('['):
+                    try:
+                        series_number_list = parse_list_expression(series_number)
+                    except ValueError:
+                        print("Error parsing series number in overrides")
+                        continue
+                else:
+                    try:
+                        series_number_list = [int(series_number)]
+                    except ValueError:
+                        try:
+                            # check if this is a reference to a multiseries config
+                            series_number_list = multiseries_config[series_number]
+                        except KeyError:
+                            print("Error parsing series number in overrides, not an integer, list expression, or multiseries config reference:", series_number)
+                            continue
+            else:
+                print("Invalid entry for override series config:", series_number)
                 continue
-        else:
-            series_number_list = [series_number]
+
 
         local_override_dict = {}
         for override_name, override_value in override_dict.items():
@@ -149,7 +186,9 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
         series_number = get_raw_tag_value(med_volume, '00200011')[0]
         if series_number in overrides:
             for key, value in overrides[series_number].items():
-                med_volume.omids_header[key] = value
+                print("Applying override for series", series_number, ":", key, "=", value)
+                force_change_header_value(med_volume, 'omids', key, value)
+                # med_volume.omids_header[key] = value
 
     def convert_recursive(converter_class, med_volume):
         #print('Checking converter', converter_class.get_name())
@@ -204,7 +243,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                     save_omids(
                         str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
                         converted_multiseries_volume, save_patient_json, save_extra_json)
-                    print('Volume', med_volume.path, 'saved with', converter_class.get_name(), 'using multiseries concatenation')
+                    print('Volume', med_volume.path, converted_multiseries_volume.shape, 'saved with', converter_class.get_name(), 'using multiseries concatenation')
                     return True # we successfully converted the multiseries volume
 
             series_prefix = ''
@@ -212,7 +251,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                 series_prefix = f'{get_raw_tag_value(med_volume, "00200011")[0]:03d}_'
             save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
                        converted_volume, save_patient_json, save_extra_json)
-            print('Volume', med_volume.path, 'saved with', converter_class.get_name())
+            print('Volume', med_volume.volume.shape, med_volume.path, 'saved with', converter_class.get_name())
             return True # we successfully converted the volume
 
         return converted # return if any child converted the volume

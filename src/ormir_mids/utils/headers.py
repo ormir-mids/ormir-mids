@@ -303,6 +303,61 @@ def separate_headers(raw_header_dict):
 
     return bids_dict, patient_dict, raw_header_dict
 
+def force_change_header_value(med_volume, header_name, named_key, new_value):
+    """
+    Force a change in the header value, both in the MIDS header and the raw header
+    Parameters:
+        med_volume (MedicalVolume): the volume to change
+        header_name (str): the header to change, either 'omids' or 'patient'
+        named_key (str): the Named tag to change
+        new_value (Any): the new value to set
+    """
+    if header_name == 'omids':
+        tag_dict = defined_tags
+        header_dict = med_volume.omids_header
+    elif header_name == 'patient':
+        tag_dict = patient_tags
+        header_dict = med_volume.patient_header
+    else:
+        raise ValueError("Header must be either 'omids' or 'patient'")
+
+    header_dict[named_key] = new_value
+
+    raw_header_dict = med_volume.extra_header
+
+    try:
+        numerical_key = tag_dict.inverse[named_key]
+    except KeyError:
+        print("Warning: unknown tag", named_key)
+        return
+
+    def set_value_in_raw_header(numerical_key, value):
+        original_content = raw_header_dict[numerical_key]
+        value_tag = _get_value_tag(original_content)
+        translator = tag_dict.get_translator(named_key)
+
+        if 'isList' in original_content:  # apply translator to each element
+            original_content[value_tag] = list(map(translator, value))
+        else:
+            original_content[value_tag] = translator(value)
+
+    found = False
+    original_content = None
+    if isinstance(numerical_key, list):
+        for key_to_test in numerical_key:
+            try:
+                set_value_in_raw_header(key_to_test, new_value)
+                found = True
+            except KeyError:
+                continue
+    else:
+        try:
+            set_value_in_raw_header(numerical_key, new_value)
+            found = True
+        except KeyError:
+            pass
+    if not found:
+        print("Warning: tag not found", named_key, numerical_key)
 
 def remerge_headers(bids_dict, patient_dict, raw_header_dict):
     """

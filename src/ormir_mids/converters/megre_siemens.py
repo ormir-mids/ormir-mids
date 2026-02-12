@@ -5,7 +5,7 @@ import numpy as np
 from .SiemensMR import SiemensMRConverter
 from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
+from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer, force_change_header_value
 
 
 # TODO: DC-3T - Incorporate changes from offline megre_siemens converter
@@ -174,7 +174,7 @@ class MeGreConverterSiemensMagnitude(Converter):
             image_comment = image_comment[0]
         if image_comment.startswith('TE [ms]:'):
             echo_time = float(image_comment[len('TE [ms]:'):])
-            med_volume.omids_header['EchoTime'] = echo_time
+            force_change_header_value(med_volume, 'omids', 'EchoTime', echo_time)
         med_volume_out = slice_volume_3d(med_volume, indices['magnitude'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -182,7 +182,7 @@ class MeGreConverterSiemensMagnitude(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'magnitude')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -230,7 +230,8 @@ class MeGreConverterSiemensPhase(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'phase')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        #med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -279,7 +280,7 @@ class MeGreConverterSiemensReal(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'real')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -325,7 +326,7 @@ class MeGreConverterSiemensImaginary(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'imaginary')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]

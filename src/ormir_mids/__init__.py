@@ -14,4 +14,4 @@ from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders, save_d
 
 __all__ = ['load_dicom', 'save_omids', 'load_dicom_with_subfolders', 'save_dicom', 'find_omids', 'MedicalVolume']
 
-__version__ = '0.1.5'
+__version__ = '0.1.6'
