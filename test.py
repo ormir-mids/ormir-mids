@@ -4,7 +4,7 @@ import sys
 
 from ormir_mids.utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from voxel import DicomReader
-from ormir_mids.utils.headers import reduce, dicom_volume_to_bids, get_raw_tag_value
+from ormir_mids.utils.headers import reduce, dicom_volume_to_mids, get_raw_tag_value
 from ormir_mids.utils.io import load_dicom, save_bids, load_omids, save_dicom
 
 import ormir_mids.converters
@@ -19,7 +19,7 @@ TEST_SIEMENS = 'C:\\Users\\francesco\\Desktop\\Data\\MESE_Anon'
 
 r = DicomReader(num_workers=0, ignore_ext=True, group_by='SeriesInstanceUID')
 im = r.load(TEST_ENHANCED)
-im_bids = dicom_volume_to_bids(im[0])
+im_bids = dicom_volume_to_mids(im[0])
 
 print(im_bids.volume.shape)
 

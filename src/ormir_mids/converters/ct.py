@@ -1,8 +1,8 @@
 import os
 
-from .abstract_converter import Converter
+from ..converter_base.abstract_converter import Converter, RootConverter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_modality
+from ..utils.headers import get_raw_tag_value, slice_volume_3d, get_modality
 
 
 def _is_ct(med_volume: MedicalVolume):
@@ -76,6 +76,16 @@ def _get_image_indices(med_volume: MedicalVolume):
     return ima_index
 
 
+class CTConverterRoot(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'CTRoot'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_ct(med_volume)
+
 class CTConverter(Converter):
 
     @classmethod
@@ -87,11 +97,12 @@ class CTConverter(Converter):
         return 'ct'
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_ct')
+    def get_suffix(cls):
+        return '_ct'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
+<<<<<<< HEAD
         if not _is_ct(med_volume):
             return False
     
@@ -104,6 +115,9 @@ class CTConverter(Converter):
             return False
     
         return True
+=======
+        return _test_ima_type(med_volume, 0)
+>>>>>>> origin/main
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -127,11 +141,12 @@ class PCCTConverter(Converter):
         return 'ct'
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_pcct')
+    def get_suffix(cls):
+        return '_pcct'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
+<<<<<<< HEAD
         if not _is_ct(med_volume):
             return False
 
@@ -141,6 +156,9 @@ class PCCTConverter(Converter):
             return False
 
         return True
+=======
+        return _test_ima_type(med_volume, 1)
+>>>>>>> origin/main
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
@@ -167,12 +185,16 @@ class ScancoConverter(Converter):
         return "ct"
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f"{subject_id}_hrpqct")
+    def get_suffix(cls):
+        return '_hrpqct'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
+<<<<<<< HEAD
         if not _is_ct(med_volume):
+=======
+        if 'SCANCO' not in str(get_raw_tag_value(med_volume, '00080070')[0]).upper():
+>>>>>>> origin/main
             return False
             
         if 'SCANCO' not in str(get_raw_tag_value(med_volume, '00080070')[0]).upper():
@@ -202,3 +224,8 @@ class ScancoConverter(Converter):
         med_volume.omids_header["ScancoMuWater"] = get_raw_tag_value(med_volume, "00291006")[0]  # (0029,1006) density factor
 
         return med_volume
+
+CTConverterRoot.set_parent(RootConverter)
+ScancoConverter.set_parent(CTConverterRoot)
+PCCTConverter.set_parent(CTConverterRoot)
+CTConverter.set_parent(CTConverterRoot)

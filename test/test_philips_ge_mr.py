@@ -22,26 +22,26 @@ def test_download(test_dirs):
 def test_convert(test_dirs):
     data_dir, output_dir = test_dirs
     convert_dicom_to_ormirmids(data_dir, output_dir, anonymize='anon', recursive=True, series_number=False, save_patient_json=True, save_extra_json=True)
-    assert (output_dir / 'mr-anat').exists()
-    assert (output_dir / 'mr-quant').exists()
-    assert n_files_in_dir(output_dir / 'mr-anat') == 24
-    assert n_files_in_dir(output_dir / 'mr-quant') == 4
+    assert (output_dir / 'sub-anon' / 'mr-anat').exists()
+    assert (output_dir / 'sub-anon' / 'mr-quant').exists()
+    assert n_files_in_dir(output_dir / 'sub-anon' / 'mr-anat') == 24
+    assert n_files_in_dir(output_dir / 'sub-anon' / 'mr-quant') == 4
 
 def test_json(test_dirs):
     data_dir, output_dir = test_dirs
-    omids_dir = output_dir / 'mr-anat'
-    assert check_echo_times(omids_dir / 'anon_megre.json', [3.9, 6.3])
-    assert check_echo_times(omids_dir / 'anon_megre_ph.json', [3.9, 6.3])
-    assert check_echo_times(omids_dir / 'anon_mese.json', [8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0,
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert check_echo_times(omids_dir / 'sub-anon_MEGRE.json', [3.9, 6.3])
+    assert check_echo_times(omids_dir / 'sub-anon_part-phase_MEGRE.json', [3.9, 6.3])
+    assert check_echo_times(omids_dir / 'sub-anon_MESE.json', [8.0, 16.0, 24.0, 32.0, 40.0, 48.0, 56.0, 64.0,
                                                            72.0, 80.0, 88.0, 96.0, 104.0, 112.0, 120.0, 128.0, 136.0])
 
 def test_nii(test_dirs):
     data_dir, output_dir = test_dirs
-    omids_dir = output_dir / 'mr-anat'
-    assert check_nib_shape(omids_dir / 'anon_megre.nii.gz', (256, 256, 32, 2))
-    assert check_nib_shape(omids_dir / 'anon_megre_ph.nii.gz', (256, 256, 32, 2))
-    assert check_nib_shape(omids_dir / 'anon_megre_real.nii.gz', (256, 256, 32, 2))
-    assert check_nib_shape(omids_dir / 'anon_megre_imag.nii.gz', (256, 256, 32, 2))
-    assert check_nib_shape(omids_dir / 'anon_mese.nii.gz', (176, 176, 6, 17))
-    quant_dir = output_dir / 'mr-quant'
-    assert check_nib_shape(quant_dir / 'anon_t2.nii.gz', (176, 176, 6))
+    omids_dir = output_dir / 'sub-anon' / 'mr-anat'
+    assert check_nib_shape(omids_dir / 'sub-anon_MEGRE.nii.gz', (256, 256, 32, 2))
+    assert check_nib_shape(omids_dir / 'sub-anon_part-phase_MEGRE.nii.gz', (256, 256, 32, 2))
+    assert check_nib_shape(omids_dir / 'sub-anon_part-real_MEGRE.nii.gz', (256, 256, 32, 2))
+    assert check_nib_shape(omids_dir / 'sub-anon_part-imag_MEGRE.nii.gz', (256, 256, 32, 2))
+    assert check_nib_shape(omids_dir / 'sub-anon_MESE.nii.gz', (176, 176, 6, 17))
+    quant_dir = output_dir / 'sub-anon' / 'mr-quant'
+    assert check_nib_shape(quant_dir / 'sub-anon_T2.nii.gz', (176, 176, 6))

@@ -1,9 +1,9 @@
 import os
 from abc import abstractmethod
 
-from .abstract_converter import Converter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, reduce, copy_volume_with_omids_headers
+from ..utils.headers import reduce, copy_volume_with_omids_headers
 
 
 class AbstractQuantitativeConverter(Converter):
@@ -22,8 +22,8 @@ class AbstractQuantitativeConverter(Converter):
         return os.path.join('mr-quant')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_{cls._get_tag()}')
+    def get_suffix(cls):
+        return f'_{cls._get_tag()}'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
@@ -48,7 +48,7 @@ class T2Converter(AbstractQuantitativeConverter):
 
     @classmethod
     def _get_tag(cls):
-        return 't2'
+        return 'T2'
 
 
 
@@ -56,26 +56,25 @@ class T1Converter(AbstractQuantitativeConverter):
 
     @classmethod
     def _get_tag(cls):
-        return 't1'
+        return 'T1'
 
 
 class FFConverter(AbstractQuantitativeConverter):
 
     @classmethod
     def _get_tag(cls):
-        return 'ff'
+        return 'FF'
 
 
 class B0Converter(AbstractQuantitativeConverter):
 
     @classmethod
     def _get_tag(cls):
-        return 'b0'
+        return 'B0'
 
 
 class B1Converter(AbstractQuantitativeConverter):
 
     @classmethod
     def _get_tag(cls):
-        return 'b1'
-
+        return 'B1'

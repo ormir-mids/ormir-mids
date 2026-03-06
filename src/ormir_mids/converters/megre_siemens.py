@@ -2,9 +2,10 @@ import os
 
 import numpy as np
 
-from .abstract_converter import Converter
+from .SiemensMR import SiemensMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
-from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer
+from ..utils.headers import get_raw_tag_value, group, slice_volume_3d, get_manufacturer, force_change_header_value
 
 
 # TODO: DC-3T - Incorporate changes from offline megre_siemens converter
@@ -18,9 +19,6 @@ def _is_megre_siemens(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is a MEGRE Siemens dataset, False otherwise.
     """
-    if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
-        return False
-
     scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
     if 'GR' in scanning_sequence_list or 'GRADIENT' in scanning_sequence_list:
@@ -133,6 +131,18 @@ def _get_echo_times(echo_times_list, indices, ima_type: str):
         echo_times_nu = [echo_times_list] * len(indices[ima_type])
     return echo_times_nu
 
+class MeGreConverterSiemensRoot(Converter):
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Siemens_Root'
+
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _is_megre_siemens(med_volume)
+
+MeGreConverterSiemensRoot.set_parent(SiemensMRConverter)
+
 class MeGreConverterSiemensMagnitude(Converter):
 
     @classmethod
@@ -148,14 +158,11 @@ class MeGreConverterSiemensMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre')
+    def get_suffix(cls):
+        return '_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 0)
 
     @classmethod
@@ -167,7 +174,7 @@ class MeGreConverterSiemensMagnitude(Converter):
             image_comment = image_comment[0]
         if image_comment.startswith('TE [ms]:'):
             echo_time = float(image_comment[len('TE [ms]:'):])
-            med_volume.omids_header['EchoTime'] = echo_time
+            force_change_header_value(med_volume, 'omids', 'EchoTime', echo_time)
         med_volume_out = slice_volume_3d(med_volume, indices['magnitude'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -175,7 +182,7 @@ class MeGreConverterSiemensMagnitude(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'magnitude')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -207,14 +214,11 @@ class MeGreConverterSiemensPhase(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_ph')
+    def get_suffix(cls):
+        return '_part-phase_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 1)
 
     @classmethod
@@ -226,7 +230,8 @@ class MeGreConverterSiemensPhase(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'phase')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        #med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -259,14 +264,11 @@ class MeGreConverterSiemensReal(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_real')
+    def get_suffix(cls):
+        return '_part-real_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 2)
 
     @classmethod
@@ -278,7 +280,7 @@ class MeGreConverterSiemensReal(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'real')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -308,14 +310,11 @@ class MeGreConverterSiemensImaginary(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_imag')
+    def get_suffix(cls):
+        return '_part-imag_MEGRE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if not _is_megre_siemens(med_volume):
-            return False
-
         return _test_ima_type(med_volume, 3)
 
     @classmethod
@@ -327,7 +326,7 @@ class MeGreConverterSiemensImaginary(Converter):
         # TO DO - incorporate code below into function
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = _get_echo_times(echo_times_list, indices, 'imaginary')
-        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        force_change_header_value(med_volume_out, 'omids', 'EchoTime', echo_times_nu)
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
@@ -354,13 +353,11 @@ class MeGreConverterSiemensReconstructedMap(Converter):
         return os.path.join('mr-quant')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_megre_reco')
+    def get_suffix(cls):
+        return '_MEGRE_RECO'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'Siemens'.lower() not in get_manufacturer(med_volume).lower():
-            return False
         scanning_sequence_list = med_volume.omids_header['ScanningSequence']
 
         if 'RM' in scanning_sequence_list:
@@ -373,3 +370,9 @@ class MeGreConverterSiemensReconstructedMap(Converter):
         med_volume_out = slice_volume_3d(med_volume, indices['reco'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         return med_volume_out
+
+MeGreConverterSiemensMagnitude.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensPhase.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensReal.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensImaginary.set_parent(MeGreConverterSiemensRoot)
+MeGreConverterSiemensReconstructedMap.set_parent(SiemensMRConverter)

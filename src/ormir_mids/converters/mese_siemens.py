@@ -1,6 +1,7 @@
 import os
 
-from .abstract_converter import Converter
+from .SiemensMR import SiemensMRConverter
+from ..converter_base.abstract_converter import Converter
 from ..utils.OMidsMedVolume import OMidsMedVolume as MedicalVolume
 from ..utils.headers import get_raw_tag_value, group, get_manufacturer
 
@@ -15,14 +16,11 @@ class MeSeConverterSiemensMagnitude(Converter):
         return os.path.join('mr-anat')
 
     @classmethod
-    def get_file_name(cls, subject_id: str):
-        return os.path.join(f'{subject_id}_mese')
+    def get_suffix(cls):
+        return '_MESE'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        if 'SIEMENS' not in get_manufacturer(med_volume):
-            return False
-
         # check if magnitude
         try:
             image_type = get_raw_tag_value(med_volume, '00089208')[0] # this is defined in newer versions
@@ -53,3 +51,4 @@ class MeSeConverterSiemensMagnitude(Converter):
 
         return med_volume_out
 
+MeSeConverterSiemensMagnitude.set_parent(SiemensMRConverter)
