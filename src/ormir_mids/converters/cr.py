@@ -14,7 +14,9 @@ def _is_cr(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is cr/dx dataset, False otherwise.
     """
-    if 'CR' not in get_modality(med_volume) or 'DX' not in get_modality(med_volume):
+    if 'CR' in get_modality(med_volume) or 'DX' in get_modality(med_volume):
+        return True
+    else:    
         return False
 
 
@@ -36,6 +38,8 @@ class CrConverter(Converter):
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
         if not _is_cr(med_volume):
             return False
+            
+        return True   
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
