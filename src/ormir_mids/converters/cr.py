@@ -14,9 +14,9 @@ def _is_cr(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is cr/dx dataset, False otherwise.
     """
-    if 'CR' in get_modality(med_volume) or 'DX' in get_modality(med_volume): 
-        return True
-    return False
+    if 'CR' not in get_modality(med_volume) or 'DX' not in get_modality(med_volume):
+        return False
+
 
 class CrConverter(Converter):
 
@@ -36,27 +36,16 @@ class CrConverter(Converter):
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
         if not _is_cr(med_volume):
             return False
-            
-        return True        
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
-<<<<<<< HEAD
-        #indices = _get_image_indices(med_volume)
-        #med_volume_out = slice_volume_3d(med_volume, 1) # This will give an error, slices list is just 1?
-        # add the important headers here
-=======
 
         # add the important headerds here
->>>>>>> origin/main
         med_volume.omids_header['KVP'] = get_raw_tag_value(med_volume, '00180060')[0]
         med_volume.omids_header['ExposureTime'] = get_raw_tag_value(med_volume, '00181150')[0]
         med_volume.omids_header['X-RayTubeCurrent'] = get_raw_tag_value(med_volume, '00181151')[0]
         med_volume.omids_header['Exposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
         return med_volume
-<<<<<<< HEAD
-=======
 
 CrConverter.set_parent(RootConverter)
->>>>>>> origin/main

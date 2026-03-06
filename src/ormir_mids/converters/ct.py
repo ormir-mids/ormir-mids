@@ -94,7 +94,7 @@ class CTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'ct'
+        return 'ct-edi'
 
     @classmethod
     def get_suffix(cls):
@@ -102,32 +102,17 @@ class CTConverter(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-<<<<<<< HEAD
-        if not _is_ct(med_volume):
-            return False
-    
-        ima_type_list = get_raw_tag_value(med_volume, '00080008')
-        if any("COUNT" in item for item in ima_type_list):
-            return False
-
-        _manufacturer = get_raw_tag_value(med_volume, '00080070')[0]
-        if 'SCANCO' in str(_manufacturer).upper():
-            return False
-    
-        return True
-=======
         return _test_ima_type(med_volume, 0)
->>>>>>> origin/main
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
-        #indices = _get_image_indices(med_volume)
-        #med_volume_out = slice_volume_3d(med_volume, indices['ct'])
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['ct'])
 
-        med_volume.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+        med_volume_out.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume_out.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
-        return med_volume
+        return med_volume_out
 
 
 class PCCTConverter(Converter):
@@ -138,7 +123,7 @@ class PCCTConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return 'ct'
+        return 'ct-pc'
 
     @classmethod
     def get_suffix(cls):
@@ -146,29 +131,17 @@ class PCCTConverter(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-<<<<<<< HEAD
-        if not _is_ct(med_volume):
-            return False
-
-        ima_type_list = get_raw_tag_value(med_volume, '00080008')
-        
-        if not any("COUNT" in item for item in ima_type_list):
-            return False
-
-        return True
-=======
         return _test_ima_type(med_volume, 1)
->>>>>>> origin/main
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
-        #indices = _get_image_indices(med_volume)
-        #med_volume_out = slice_volume_3d(med_volume, indices['pcct'])
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['pcct'])
 
-        med_volume.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
-        med_volume.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
+        med_volume_out.omids_header['XRayEnergy'] = get_raw_tag_value(med_volume, '00180060')[0]
+        med_volume_out.omids_header['XRayExposure'] = get_raw_tag_value(med_volume, '00181152')[0]
 
-        return med_volume
+        return med_volume_out
 
 
 class ScancoConverter(Converter):
@@ -182,7 +155,7 @@ class ScancoConverter(Converter):
 
     @classmethod
     def get_directory(cls):
-        return "ct"
+        return "ct-hrpqct"
 
     @classmethod
     def get_suffix(cls):
@@ -190,16 +163,8 @@ class ScancoConverter(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-<<<<<<< HEAD
-        if not _is_ct(med_volume):
-=======
         if 'SCANCO' not in str(get_raw_tag_value(med_volume, '00080070')[0]).upper():
->>>>>>> origin/main
             return False
-            
-        if 'SCANCO' not in str(get_raw_tag_value(med_volume, '00080070')[0]).upper():
-             return False
-                    
         return _test_ima_type(med_volume, "ORIGINAL")
 
     @classmethod
