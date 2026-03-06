@@ -40,7 +40,7 @@ class CrConverter(Converter):
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
 
-        # add the important headerds here
+        # add the important headers here
         med_volume.omids_header['KVP'] = get_raw_tag_value(med_volume, '00180060')[0]
         med_volume.omids_header['ExposureTime'] = get_raw_tag_value(med_volume, '00181150')[0]
         med_volume.omids_header['X-RayTubeCurrent'] = get_raw_tag_value(med_volume, '00181151')[0]
