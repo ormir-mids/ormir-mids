@@ -1,0 +1,50 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # required for trusted publishing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get local version
+        id: local
+        run: |
+          VERSION=$(grep -oP '(?<=__version__ = ['"'"'"])[^'"'"'"]+' src/ormir_mids/__init__.py)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Get PyPI version
+        id: pypi
+        run: |
+          PYPI_VERSION=$(pip index versions ormir-mids 2>/dev/null | grep -oP '(?<=ormir-mids \().*?(?=\))' | head -1 || echo "0.0.0")
+          echo "version=$PYPI_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Compare versions
+        id: compare
+        run: |
+          LOCAL="${{ steps.local.outputs.version }}"
+          PYPI="${{ steps.pypi.outputs.version }}"
+          echo "Local version: $LOCAL"
+          echo "PyPI version:  $PYPI"
+          if [ "$LOCAL" != "$PYPI" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build package
+        if: steps.compare.outputs.changed == 'true'
+        run: |
+          pip install build
+          python -m build
+
+      - name: Publish to PyPI
+        if: steps.compare.outputs.changed == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
