@@ -133,8 +133,8 @@ defined_tags = TagDefinitionDict({
 
     # Tags for CT
     "00080060": 'Modality',
-    '00180060': 'XRayEnergy',
-    '00181152': 'XRayExposure',
+    '00180060': 'KVP',
+    '00181152': 'Exposure',
 
     # Tags for CR
     '00181150': 'ExposureTime',

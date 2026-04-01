@@ -14,7 +14,9 @@ def _is_cr(med_volume: MedicalVolume):
     Returns:
         bool: True if the MedicalVolume is cr/dx dataset, False otherwise.
     """
-    if 'CR' not in get_modality(med_volume) or 'DX' not in get_modality(med_volume):
+    if 'CR' in get_modality(med_volume) or 'DX' in get_modality(med_volume):
+        return True
+    else:    
         return False
 
 
@@ -36,11 +38,13 @@ class CrConverter(Converter):
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
         if not _is_cr(med_volume):
             return False
+            
+        return True   
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
 
-        # add the important headerds here
+        # add the important headers here
         med_volume.omids_header['KVP'] = get_raw_tag_value(med_volume, '00180060')[0]
         med_volume.omids_header['ExposureTime'] = get_raw_tag_value(med_volume, '00181150')[0]
         med_volume.omids_header['X-RayTubeCurrent'] = get_raw_tag_value(med_volume, '00181151')[0]

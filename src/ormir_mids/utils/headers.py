@@ -133,6 +133,9 @@ def headers_to_dicts(header_list):
     """
     if type(header_list) != list:
         header_list = header_list.squeeze().tolist()
+        
+    if isinstance(header_list, pydicom.dataset.FileDataset): # in case there is only one image (and header) file
+        header_list = [header_list]
 
     json_header_list = []
     for h in header_list:
@@ -287,10 +290,11 @@ def separate_headers(raw_header_dict):
     process_dict(bids_dict, defined_tags)
 
     try:
-        if "CT" in bids_dict.get("Modality", ""):
+        modality = bids_dict.get("Modality", "")
+        if modality in {"CT", "CR", "DX", "US"}:
             # CT scanners do not have a PhaseEncodingDirection tag
             pass
-        else:
+        else: 
             # in-plane phase encoding direction - recommended by BIDS
             # TODO: fix correct polarity
             pe_value = bids_dict['PhaseEncodingDirection']
