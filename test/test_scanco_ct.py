@@ -76,13 +76,13 @@ def test_download(downloaded_data):
 def test_convert(converted_data):
     """Test that conversion created the expected directory"""
     assert (
-        converted_data / 'sub-anon' / "ct-hrpqct"
-    ).exists(), f"Missing ct-hrpqct directory. Available directories: {list(converted_data.iterdir())}"
+        converted_data / 'sub-anon' / "ct"
+    ).exists(), f"Missing ct directory. Available directories: {list(converted_data.iterdir())}"
 
 
 def test_json(converted_data):
     """Test the JSON metadata"""
-    omids_dir = converted_data / 'sub-anon' / "ct-hrpqct"
+    omids_dir = converted_data / 'sub-anon' / "ct"
     assert (
         omids_dir / "sub-anon_hrpqct.json"
     ).exists(), f"JSON file not found. Directory contents: {list(omids_dir.iterdir())}"
@@ -96,7 +96,7 @@ def test_json(converted_data):
 
 def test_nii(converted_data):
     """Test the NIfTI file"""
-    omids_dir = converted_data / 'sub-anon' / "ct-hrpqct"
+    omids_dir = converted_data / 'sub-anon' / "ct"
     nii_file = omids_dir / "sub-anon_hrpqct.nii.gz"
     assert (
         nii_file.exists()
