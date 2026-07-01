@@ -4,6 +4,9 @@ import os
 from voxel import DicomReader, DicomWriter, NiftiReader, NiftiWriter
 from ..utils import headers
 
+from ormir_xct.core.util.file_reader import file_reader
+SCANCO_EXTENSIONS = (".aim", ".isq")
+
 
 def load_dicom(path, group_by = None):
     """
@@ -22,6 +25,26 @@ def load_dicom(path, group_by = None):
     for medical_volume in volume_list:
         setattr(medical_volume, 'path', path)
         new_volume = headers.dicom_volume_to_mids(medical_volume)
+        if group_by is not None:
+            new_volume = headers.group(new_volume, group_by)
+        out.append(new_volume)
+    return out
+
+
+def load_scanco(path, group_by=None):
+    """
+    Loads all scanco files in a folder.
+    """
+    scanco_files = sorted(
+        os.path.join(path, f)
+        for f in os.listdir(path)
+        if f.lower().endswith(SCANCO_EXTENSIONS)
+    )
+
+    out = []
+    for scanco_file in scanco_files:
+        sitk_image = file_reader(scanco_file)
+        new_volume = headers.scanco_volume_to_mids(sitk_image, scanco_file)
         if group_by is not None:
             new_volume = headers.group(new_volume, group_by)
         out.append(new_volume)

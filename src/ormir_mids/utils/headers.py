@@ -691,6 +691,19 @@ def dicom_volume_to_mids(medical_volume):
 
 dicom_volume_to_bids = dicom_volume_to_mids
 
+
+def scanco_volume_to_mids(sitk_image, path):
+    base_volume = MedicalVolume.from_sitk(sitk_image)
+    medical_volume = MedicalVolume(base_volume.volume, base_volume.affine)  # re-wrap as OMidsMedVolume
+    setattr(medical_volume, "path", path)
+    # TODO: delete print statements at the end of development phase
+    for k in sitk_image.GetMetaDataKeys():
+        print(k, "=", sitk_image.GetMetaData(k))
+    return medical_volume
+
+scanco_volume_to_bids = scanco_volume_to_mids
+
+
 def mids_volume_to_dicom(medical_volume, new_series=False):
     """
     Converts a BIDS medical volume to a medical volume by creating and attaching the appropriate DICOM headers.
