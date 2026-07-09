@@ -298,7 +298,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
 
         return converted # return if any child converted the volume
 
-
+    data_info = []
 
     for med_volume in med_volume_list:
         multiseries_part = False
