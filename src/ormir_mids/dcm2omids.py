@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import copy
 import pprint
 import re
 import json
@@ -18,6 +19,11 @@ def parse_patient_name(patient_name):
     except KeyError:
         return str(patient_name)
 
+def is_valid_dicom_uid(uid: str) -> bool:
+    # Pattern combines the component rules and length restriction
+    pattern = r"^(?:0|[1-9][0-9]*)(?:\.(?:0|[1-9][0-9]*)){0,63}$(?<=^.{1,64}$)"
+    return bool(re.match(pattern, uid))
+
 def parse_list_expression(list_expression):
     """
     Parse a list expression in the format [start:increment:end]. If the end is prefixed with 'n', then this number
@@ -32,7 +38,7 @@ def parse_list_expression(list_expression):
         list_expression: a string
 
     Returns:
-        a list of integers or floats
+        a list of integers or floats or strings (UIDs)
     """
     # Check if this is a comma-separated list
     if ',' in list_expression:
@@ -42,6 +48,10 @@ def parse_list_expression(list_expression):
             values = []
             for val in values_str:
                 val = val.strip()
+                # Try to parse as UID
+                if is_valid_dicom_uid(val):
+                    values.append(val)
+                    continue
                 # Try to parse as int first, then float
                 try:
                     values.append(int(val))
@@ -106,15 +116,26 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
 
     multiseries_config = None
     multiseries_volumes = {}
+    multiseries_uids = {}
     raw_overrides = {}
+    manual_converters = []
+    data_info = {}
 
     if os.path.exists(os.path.join(inputDir, 'series_config.json')):
         with open(os.path.join(inputDir, 'series_config.json')) as json_file:
             multiseries_config = json.load(json_file)
+            data_info = copy.deepcopy(multiseries_config)  # this is the output json structure
+            # that also contains the initial overrides and series config
             if 'overrides' in multiseries_config:
                 raw_overrides = multiseries_config['overrides']
                 del multiseries_config['overrides']
+            if 'manual_converters' in multiseries_config:
+                manual_converters = multiseries_config['manual_converters']
+                del multiseries_config['manual_converters']
         print("multiseries config loaded")
+
+    data_info['manual_converters'] = [] # reset the manual converters. It will anyway be (re)created
+
 
     if multiseries_config:
         # parse multiseries config
@@ -147,6 +168,9 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                         print("Error parsing series number in overrides")
                         continue
                 else:
+                    if is_valid_dicom_uid(series_number):
+                        series_number_list = [series_number] # this is a uid
+                        continue
                     try:
                         series_number_list = [int(series_number)]
                     except ValueError:
@@ -154,7 +178,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                             # check if this is a reference to a multiseries config
                             series_number_list = multiseries_config[series_number]
                         except KeyError:
-                            print("Error parsing series number in overrides, not an integer, list expression, or multiseries config reference:", series_number)
+                            print("Error parsing series number in overrides: not a UID, integer, list expression, or multiseries config reference:", series_number)
                             continue
             else:
                 print("Invalid entry for override series config:", series_number)
@@ -173,6 +197,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
         for series_index, series_number in enumerate(series_number_list):
             override_dict_for_series = {}
             for key, value in local_override_dict.items():
+                # check if there are different values for every element in the series_number_list
                 if isinstance(value, list) and len(value) == len(series_number_list):
                     override_dict_for_series[key] = value[series_index]
                 else:
@@ -185,9 +210,16 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
 
     for med_volume in med_volume_list:
         series_number = get_raw_tag_value(med_volume, '00200011')[0]
+        series_uid = get_raw_tag_value(med_volume, '0020000E')[0]
+        # overrides can be saved with series number or uid as indices
         if series_number in overrides:
             for key, value in overrides[series_number].items():
                 print("Applying override for series", series_number, ":", key, "=", value)
+                force_change_header_value(med_volume, 'omids', key, value)
+                # med_volume.omids_header[key] = value
+        if series_uid in overrides:
+            for key, value in overrides[series_uid].items():
+                print("Applying override for series", series_uid, ":", key, "=", value)
                 force_change_header_value(med_volume, 'omids', key, value)
                 # med_volume.omids_header[key] = value
 
@@ -249,6 +281,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                     if getattr(med_volume, 'compatible_converters', None) is None:
                         setattr(med_volume, 'compatible_converters', [])
                     med_volume.compatible_converters.append(converter_class)
+                    setattr(med_volume, 'multiseries_uids', multiseries_uids[series_group_name])
                     return True # we successfully converted the multiseries volume
 
             series_prefix = ''
@@ -265,22 +298,27 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
 
         return converted # return if any child converted the volume
 
-    data_info = []
+
 
     for med_volume in med_volume_list:
         multiseries_part = False
         if multiseries_config:
             series_number = get_raw_tag_value(med_volume, '00200011')[0]
+            series_uid = get_raw_tag_value(med_volume, '0020000E')[0]
             med_path = os.path.abspath(med_volume.path)
 
 
             for series_group_name, series_list in multiseries_config.items():
                 # check if this series is part of a group
                 if series_number in series_list or \
-                        med_path in [os.path.abspath(os.path.join(inputDir, str(x))) for x in series_list]:
+                        med_path in [os.path.abspath(os.path.join(inputDir, str(x))) for x in series_list] or \
+                        series_uid in series_list:
                     if series_group_name not in multiseries_volumes:
                         multiseries_volumes[series_group_name] = []
                     multiseries_volumes[series_group_name].append(med_volume)
+                    if series_group_name not in multiseries_uids:
+                        multiseries_uids[series_group_name] = []
+                    multiseries_uids[series_group_name].append(series_uid)
                     multiseries_part = True
                     print('Multiseries part:', series_group_name)
                     if len(multiseries_volumes[series_group_name]) == len(series_list):
@@ -293,10 +331,13 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
         if convert_recursive(RootConverter, med_volume):
             print("Dataset converted successfully")
             info_object = {
-                'SeriesUID': get_raw_tag_value(med_volume, '0020000E'),
-                'SeriesDescription': get_raw_tag_value(med_volume, '0008103E'),
+                'SeriesUID': get_raw_tag_value(med_volume, '0020000E')[0],
+                'SeriesDescription': get_raw_tag_value(med_volume, '0008103E')[0],
                 'Converters': []
             }
+            multiseries_uids_for_volume = getattr(med_volume, 'multiseries_uids', None)
+            if multiseries_uids_for_volume:
+                info_object['SeriesUID'] = multiseries_uids_for_volume
             for converter_class in med_volume.compatible_converters:
                 if converter_class is RootConverter:
                     continue
@@ -308,7 +349,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                     'Suffix': converter_class.get_suffix()
                 }
                 info_object['Converters'].append(converter_object)
-            data_info.append(info_object)
+            data_info['manual_converters'].append(info_object)
         else:
             print("No compatible converter found for dataset", med_volume.path)
     return data_info
