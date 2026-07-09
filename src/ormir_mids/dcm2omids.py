@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import pprint
 import re
 import json
 import os
@@ -226,8 +227,9 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                 patient_name = ANON_NAME
             else:
                 patient_name = parse_patient_name(med_volume.patient_header['PatientName'])
-            output_path = pathlib.Path(outputDir) / os.path.dirname(converter_class.get_file_path(patient_name, session))
-            output_path.mkdir(parents=True, exist_ok=True)
+            if outputDir:
+                output_path = pathlib.Path(outputDir) / os.path.dirname(converter_class.get_file_path(patient_name, session))
+                output_path.mkdir(parents=True, exist_ok=True)
             if multiseries_part:
                 if multiseries_finished is not None:
                     # a multiseries is finished, we can concatenate
@@ -239,22 +241,31 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                         first_series = min(
                             [get_raw_tag_value(x, '00200011')[0] for x in multiseries_volumes[series_group_name]])
                         series_prefix = f'{first_series:03d}_'
-
-                    save_omids(
-                        str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
-                        converted_multiseries_volume, save_patient_json, save_extra_json)
+                    if outputDir:
+                        save_omids(
+                            str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
+                            converted_multiseries_volume, save_patient_json, save_extra_json)
                     print('Volume', med_volume.path, converted_multiseries_volume.shape, 'saved with', converter_class.get_name(), 'using multiseries concatenation')
+                    if getattr(med_volume, 'compatible_converters', None) is None:
+                        setattr(med_volume, 'compatible_converters', [])
+                    med_volume.compatible_converters.append(converter_class)
                     return True # we successfully converted the multiseries volume
 
             series_prefix = ''
             if ADD_SERIES_NUMBER:
                 series_prefix = f'{get_raw_tag_value(med_volume, "00200011")[0]:03d}_'
-            save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
+            if outputDir:
+                save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
                        converted_volume, save_patient_json, save_extra_json)
             print('Volume', med_volume.volume.shape, med_volume.path, 'saved with', converter_class.get_name())
+            if getattr(med_volume, 'compatible_converters', None) is None:
+                setattr(med_volume, 'compatible_converters', [])
+            med_volume.compatible_converters.append(converter_class)
             return True # we successfully converted the volume
 
         return converted # return if any child converted the volume
+
+    data_info = []
 
     for med_volume in med_volume_list:
         multiseries_part = False
@@ -281,14 +292,32 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
 
         if convert_recursive(RootConverter, med_volume):
             print("Dataset converted successfully")
+            info_object = {
+                'SeriesUID': get_raw_tag_value(med_volume, '0020000E'),
+                'SeriesDescription': get_raw_tag_value(med_volume, '0008103E'),
+                'Converters': []
+            }
+            for converter_class in med_volume.compatible_converters:
+                if converter_class is RootConverter:
+                    continue
+                if not converter_class.get_directory():
+                    continue
+                converter_object = {
+                    'Name': converter_class.get_name(),
+                    'Directory': converter_class.get_directory(),
+                    'Suffix': converter_class.get_suffix()
+                }
+                info_object['Converters'].append(converter_object)
+            data_info.append(info_object)
         else:
             print("No compatible converter found for dataset", med_volume.path)
+    return data_info
 
 
 def main():
     parser = argparse.ArgumentParser(description='Convert DICOM to ORMIR-MIDS format')
     parser.add_argument('input_folder', type=str, help='Input folder')
-    parser.add_argument('output_folder', type=str, help='Output folder')
+    parser.add_argument('output_folder', type=str, nargs='?', const=None, help='Output folder. Omit to avoid converting')
     parser.add_argument('--anonymize', '-a', const='anon', metavar='pseudo_name', dest='anonymize', type=str, nargs = '?', help='Use the pseudo_name (default: anon) as patient name')
     parser.add_argument('--recursive', '-r', action='store_true', help='Recurse into subfolders')
     parser.add_argument('--series-number', '-s', action='store_true', help='Add series number to file name')
@@ -296,6 +325,8 @@ def main():
     parser.add_argument('--disable-extra-json', '-e', action='store_true', help='Avoid saving extra json file')
     parser.add_argument('--session', metavar='session_id', type=str, nargs=1,
                         help='Specify the session ID to use (default: none)')
+    parser.add_argument('--save-info-json', type=str, nargs=1, help='Save info json file')
+
 
     args = parser.parse_args()
 
@@ -304,12 +335,17 @@ def main():
     ANON_NAME = args.anonymize
     RECURSIVE = args.recursive
     ADD_SERIES_NUMBER = args.series_number
+    save_json = args.save_info_json
+    if not outputDir and not save_json:
+        print("Warning! No output dir specified and no output json. This command will have no effect.")
     if args.session:
         SESSION = args.session[0]
     else:
         SESSION = None
-    convert_dicom_to_ormirmids(inputDir, outputDir, ANON_NAME, RECURSIVE, SESSION, ADD_SERIES_NUMBER, not args.disable_patient_json, not args.disable_extra_json)
-
+    data_info = convert_dicom_to_ormirmids(inputDir, outputDir, ANON_NAME, RECURSIVE, SESSION, ADD_SERIES_NUMBER, not args.disable_patient_json, not args.disable_extra_json)
+    if save_json:
+        with open(save_json[0], 'w') as f:
+            json.dump(data_info, f, indent=4)
 
 # if __name__ == "__main__":
 #     main()
