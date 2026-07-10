@@ -6,6 +6,8 @@ import json
 import os
 import sys
 
+from voxel import MedicalVolume
+
 from .converters import RootConverter
 from .utils.headers import concatenate_volumes_3d, group, get_raw_tag_value, force_change_header_value
 from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders
@@ -87,6 +89,74 @@ def parse_list_expression(list_expression):
         n_values = int((float(m.group(3))-start)/step) + 1
     return [start + i * step for i in range(n_values)]
 
+def get_volume_matcher(config_expression: str, inputDir = ''):
+    """
+    Returns a function that matches a volume against an expression
+
+    Args:
+        config_expression: an expression in the series_config.json file:
+            - a path
+            - a series number
+            - a series UID
+            - a list expression of paths, numbers, UIDs
+            - a regular expression
+
+    Returns:
+        matcher(MedicalVolume): a function that accepts a MedicalVolume and returns true if it matches
+
+    """
+    config_expression = config_expression.strip()
+
+    def _get_relevant_tags(med_volume: MedicalVolume):
+        series_number = get_raw_tag_value(med_volume, '00200011')[0]
+        series_uid = get_raw_tag_value(med_volume, '0020000E')[0]
+        series_description = get_raw_tag_value(med_volume, '0008103E')[0]
+        return series_number, series_uid, series_description
+    try:
+        int_value = int(config_expression)
+        # this is a simple integer
+        def integerMatcher(v: MedicalVolume):
+            series_number, _, _ = _get_relevant_tags(v)
+            return int_value == series_number
+        return integerMatcher
+    except ValueError:
+        pass # continue if it's not integer
+    if is_valid_dicom_uid(config_expression):
+        # single expression
+        def uidMatcher(v: MedicalVolume):
+            _, series_uid, _ = _get_relevant_tags(v)
+            return series_uid == config_expression
+        return uidMatcher
+    # not a valid UID
+    if config_expression.startswith('['):
+        # this is a list expression
+        value_list = parse_list_expression(config_expression)
+        # this can be a list of UIDs, paths, or numbers
+        def list_expression_matcher(v: MedicalVolume):
+            series_number, series_uid, _ = _get_relevant_tags(v)
+            med_path = os.path.abspath(v.path)
+            for value in value_list:
+                if isinstance(value, int):
+                    if series_number == value:
+                        return True
+                    continue # if it's an integer, and not a match, continue
+                if is_valid_dicom_uid(value):
+                    if series_uid == value:
+                        return True
+                    continue # same as above. If it's a UID, and not a match, continue
+                target_path = os.path.abspath(os.path.join(inputDir, str(value)))
+                if target_path == med_path:
+                    return True
+            return False # if nothing matches, return false
+        return list_expression_matcher
+    if config_expression.startswith('/'):
+        # regular expression. It is defined as '/expression/'
+        expr = re.compile(config_expression.strip('/')) # remove initial and final /
+        def regexp_matcher(v: MedicalVolume):
+            _, _, series_description = _get_relevant_tags(v)
+            return bool(expr.match(series_description))
+        return regexp_matcher
+    raise ValueError('Invalid expression')
 
 def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', recursive=True, session='', series_number=False, save_patient_json=True, save_extra_json=True):
     """
@@ -160,6 +230,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
         try:
             series_number_list = [int(series_number)]
         except ValueError:
+            # series number is not an int
             if isinstance(series_number, str):
                 if series_number.startswith('['):
                     try:
@@ -170,10 +241,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                 else:
                     if is_valid_dicom_uid(series_number):
                         series_number_list = [series_number] # this is a uid
-                        continue
-                    try:
-                        series_number_list = [int(series_number)]
-                    except ValueError:
+                    else:
                         try:
                             # check if this is a reference to a multiseries config
                             series_number_list = multiseries_config[series_number]
