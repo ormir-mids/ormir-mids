@@ -1,9 +1,22 @@
 import json
 import os
+from collections import namedtuple
+from pathlib import Path
 
+from py_aimio import read_image as read_scanco_image
 from voxel import DicomReader, DicomWriter, NiftiReader, NiftiWriter
+
 from ..utils import headers
 
+
+# Convenience tuple to hold an image (numpy.ndarray) and metadata (dict).
+numpy_image_tuple = namedtuple("NumpyImageTuple", ["image", "metadata"])
+# file extensions compatible with aimio-py
+scanco_file_extensions = [".isq", ".aim", ".scv", ".gobj"]
+
+
+class UnsupportedScancoExtensionError(ValueError):
+    """Custom error raised when a Scanco file has an extension not handled by `load_scanco`."""
 
 def load_dicom(path, group_by = None):
     """
@@ -194,3 +207,38 @@ def find_omids(path, suffix):
                 found_files.append(os.path.join(root, f))
 
     return found_files
+
+def load_scanco(path, **kwargs):
+    """
+    Read a HR-pQCT (Scanco) AIM, ISQ, SCV, GOBJ image using the py_aimio library.
+
+    Parameters:
+        path (str or pathlib.Path): Path to the Scanco file to read. Strings
+            or path-like objects are accepted. VMS-style paths with a trailing
+            version suffix such as "scan.AIM;3" are supported.
+        **kwargs: Additional keyword arguments passed to read_scanco_image.
+
+    Returns:
+        NumpyImageTuple (tuple): A tuple-like object containing the loaded image array and its
+            associated metadata as (numpy.ndarray, dict).
+    """
+    # check if the input file path is a `Path` object, if not convert it to a `Path` object
+    if not isinstance(path, Path):
+        path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Input file {path} does not exist.")
+
+    # Get the file extension and check if it's readable. VMS-style paths may carry
+    # a trailing version number (e.g. "scan.AIM;3"), so strip that off before matching.
+    # The file itself is opened using the original, unmodified path.
+    input_extension = path.suffix.lower().split(";", 1)[0]
+
+    if input_extension in scanco_file_extensions:
+        image, metadata = read_scanco_image(path, **kwargs)
+    else:
+        raise UnsupportedScancoExtensionError(
+            f"Input file {path} has an unsupported file extension. Supported extensions are: {scanco_file_extensions}"
+        )
+
+    return numpy_image_tuple(image, metadata)
