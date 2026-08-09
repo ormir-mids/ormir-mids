@@ -5,6 +5,13 @@ import numpy as np
 import pytest
 from helpers import check_nib_shape, zenodo_download_and_extract
 
+from py_aimio import (
+    get_aim_density_equation,
+    get_aim_hu_equation,
+    get_isq_density_equation,
+    get_isq_hu_equation,
+)
+
 from ormir_mids.converters.ct import ScancoConverter
 from ormir_mids.dcm2omids import convert_dicom_to_ormirmids
 from ormir_mids.utils.io import (
@@ -14,6 +21,7 @@ from ormir_mids.utils.io import (
     scanco_file_extensions,
 )
 from ormir_mids.utils.OMidsMedVolume import OMidsMedVolume
+from ormir_mids.utils.scanco import _scanco_affine, jsonable, scanco_volume_to_mids
 
 
 @pytest.fixture(scope="session")
@@ -238,3 +246,274 @@ def first_scanco_image_path(scanco_raw_data_dir):
         f"Contents: {list(scanco_raw_data_dir.rglob('*'))}"
     )
     return candidates[0]
+
+
+# --- scanco_volume_to_mids: field-to-file split -----------------------------------------
+#
+# Metadata below mirrors real py_aimio output (captured by reading actual .AIM/.ISQ files),
+# with patient-identifying values replaced by fakes. Two real-world quirks are preserved
+# deliberately, since they drive behavior in scanco_volume_to_mids:
+#   - AIM nests most fields under processing_log; ISQ has them flat.
+#   - AIM's spacing is in millimeters; ISQ's is in micrometers (unconverted by py_aimio).
+
+_AIM_ARRAY_SHAPE = (2, 3, 4)  # (z, y, x), matching dimensions (4, 3, 2) below
+
+
+def _aim_meta():
+    processing_log_raw = (
+        "! Processing Log\n"
+        "!\n"
+        "Created by                    ISQ_TO_AIM (IPL)\n"
+        "Time                          16-APR-2017 20:20:59.67\n"
+        "Original file                 dk0:[xtremect2.data.00001237.00005697]d0005679.isq;\n"
+        "Original Creation-Date        14-SEP-2016 15:27:12.18\n"
+        "Patient Name                                   DBQ_152\n"
+        "Index Patient                                     1237\n"
+        "Index Measurement                                5697\n"
+        "Site                                               20\n"
+        "Scanner ID                                       3401\n"
+        "Scanner type                                        9\n"
+        "Reconstruction-Alg.                                 3\n"
+        "Energy [V]                                      68000\n"
+        "Intensity [uA]                                   1470\n"
+        "Integration time [us]                           43000\n"
+        "Mu_Scaling                                       8192\n"
+        "HU: mu water                                   0.2366\n"
+        "Density: slope                             1662.52405\n"
+        "Density: intercept                        -398.609009\n"
+    )
+    return {
+        "filename": "/home/user/private_study/00001237/IMG1237.AIM",
+        "version": 2,
+        "id": 0,
+        "reference": 0,
+        "aim_type": 131074,
+        "buffer_type": 2,
+        "position": (1069, 541, 0),
+        "dimensions": (4, 3, 2),
+        "offset": (0, 0, 0),
+        "element_size": (0.0607, 0.0607, 0.0607),
+        "processing_log": {
+            "Created by": "ISQ_TO_AIM (IPL)",
+            "Time": "16-APR-2017 20:20:59.67",
+            "Original file": "dk0:[xtremect2.data.00001237.00005697]d0005679.isq;",
+            "Original Creation-Date": "14-SEP-2016 15:27:12.18",
+            "Patient Name": "DBQ_152",
+            "Index Patient": 1237,
+            "Index Measurement": 5697,
+            "Site": 20,
+            "Scanner ID": 3401,
+            "Scanner type": 9,
+            "Reconstruction-Alg.": 3,
+            "Energy [V]": 68000,
+            "Intensity [uA]": 1470,
+            "Integration time [us]": 43000,
+            "Mu_Scaling": 8192,
+            "HU: mu water": 0.2366,
+            "Density: slope": 1662.52405,
+            "Density: intercept": -398.609009,
+            "Calibration Data": "68 kVp, BH: 200 mg HA/ccm, Scaling 8192, 0.2 CU",
+        },
+        "byte_offset": 3197,
+        "spacing": (0.0607, 0.0607, 0.0607),
+        "origin": (64.8879, 32.8385, 0.0),
+        "vtkbone_origin": (64.9183, 32.8689, 0.0303),
+        "direction": (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+        "processing_log_raw": processing_log_raw,
+    }
+
+
+def _isq_meta():
+    return {
+        "filename": "/home/user/private_study/00347/C0004378.ISQ",
+        "version": 4,
+        "data_type": 3,
+        "nr_of_bytes": 1270877696,
+        "nr_of_blocks": 2482183,
+        "patient_index": 347,
+        "scanner_id": 6020,
+        "creation_date": (1872582144, 12304986),
+        "dimensions": (4, 3, 2),
+        "dimensions_p": (4, 3, 2),
+        "dimensions_um": (137.6, 103.2, 68.8),
+        "offset": (0, 0, 0),
+        "spacing": (34.4, 34.4, 34.4),  # micrometers, unconverted by py_aimio
+        "creation_date_string": " 8-MAY-2026 10:03:52.03\n",
+        "slice_thickness_um": 34,
+        "slice_increment_um": 34,
+        "slice_1_pos_um": 40713,
+        "min_data_value": -4111,
+        "max_data_value": 32767,
+        "mu_scaling": 4096,
+        "nr_of_samples": 1024,
+        "nr_of_projections": 250,
+        "scandist_um": 35225,
+        "scanner_type": 10,
+        "sampletime_us": 200000,
+        "index_measurement": 4559,
+        "site": 4,
+        "reference_line_um": 40713,
+        "recon_alg": 3,
+        "name": "BME_2026                               ",
+        "energy": 70000,
+        "intensity": 200,
+        "holder": 10,
+        "data_offset": 3584,
+        "buffer_type": 0,
+        "rescale_type": 1,
+        "rescale_units": "mg HA/ccm",
+        "rescale_slope": 373.335,
+        "rescale_intercept": -194.278,
+        "mu_water": 0.4792,
+        "origin": (0.0, 0.0, 0.0),
+        "direction": (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
+        "unit": "native",
+    }
+
+
+def _load_scanco_volume(meta, filename):
+    array = np.arange(np.prod(_AIM_ARRAY_SHAPE), dtype=np.int16).reshape(_AIM_ARRAY_SHAPE)
+    with mock.patch(
+        "ormir_mids.utils.scanco.load_scanco", return_value=(array, meta)
+    ):
+        return scanco_volume_to_mids(filename), array
+
+
+def test_scanco_volume_to_mids_transposes_without_flipping():
+    """volume[i,j,k] (x,y,z) must equal array[k,j,i] (z,y,x): a pure axis permutation, no reversal."""
+    med_volume, array = _load_scanco_volume(_aim_meta(), "scan.AIM")
+    assert med_volume.volume.shape == (4, 3, 2)
+    for i in range(4):
+        for j in range(3):
+            for k in range(2):
+                assert med_volume.volume[i, j, k] == array[k, j, i]
+
+
+def test_scanco_affine_aim_is_already_millimeters():
+    meta = _aim_meta()
+    affine = _scanco_affine(meta)
+    np.testing.assert_allclose(np.diag(affine)[:3], meta["spacing"])
+    np.testing.assert_allclose(affine[:3, 3], meta["origin"])
+
+
+def test_scanco_affine_isq_micrometers_converted_to_millimeters():
+    """Regression test: py_aimio reports ISQ spacing in micrometers, unlike AIM's millimeters.
+    Without conversion the affine would be 1000x too large."""
+    meta = _isq_meta()
+    affine = _scanco_affine(meta)
+    expected_spacing_mm = np.array(meta["spacing"]) * 1e-3
+    np.testing.assert_allclose(np.diag(affine)[:3], expected_spacing_mm)
+    assert np.diag(affine)[0] < 1.0  # ~0.0344 mm, not ~34.4
+
+
+def test_scanco_volume_to_mids_aim_field_split():
+    med_volume, _ = _load_scanco_volume(_aim_meta(), "IMG1237.AIM")
+
+    # main json: fields ScancoConverter.convert_dataset needs
+    processing_log_raw = _aim_meta()["processing_log_raw"]
+    expected_rescale_slope, expected_rescale_intercept = get_aim_hu_equation(processing_log_raw)
+    expected_density_slope, expected_density_intercept = get_aim_density_equation(processing_log_raw)
+    assert med_volume.omids_header == {
+        "Modality": "CT",
+        "Manufacturer": "SCANCO Medical",
+        "RescaleSlope": expected_rescale_slope,
+        "RescaleIntercept": expected_rescale_intercept,
+        "ImageTypeSiemens": "DERIVED/PRIMARY/AXIAL",
+        "XRayEnergy": 68.0,
+        "XRayExposureTime": 43.0,
+        "XRayExposure": pytest.approx(1470 * 43000 / 1e6),
+        "ConvolutionKernel": "3",
+        "ScancoMuScaling": 8192,
+        "ScancoMuWater": 0.2366,
+        "ScancoDensitySlope": expected_density_slope,
+        "ScancoDensityIntercept": expected_density_intercept,
+    }
+    assert isinstance(med_volume.omids_header["ScancoMuScaling"], int)
+
+    # patient json: identifying + location fields
+    assert med_volume.patient_header == {
+        "PatientName": "DBQ_152",
+        "PatientID": "1237",
+        "ScancoMeasurementIndex": "5697",
+        "ScancoSite": "20",
+        "ScannerID": "3401",
+        "ScanDate": "20160914",
+        "OriginalFile": "dk0:[xtremect2.data.00001237.00005697]d0005679.isq;",
+    }
+
+    # extra json: must not duplicate anything from main/patient, must not leak filename/raw log
+    extra = med_volume.extra_header
+    assert "filename" not in extra
+    assert "processing_log_raw" not in extra
+    for leaked_key in ("Patient Name", "Index Patient", "Index Measurement", "Site",
+                       "Scanner ID", "Original file", "Original Creation-Date", "Time",
+                       "Energy [V]", "Mu_Scaling", "Density: slope"):
+        assert leaked_key not in extra["processing_log"]
+    assert extra["processing_log"]["Calibration Data"] == "68 kVp, BH: 200 mg HA/ccm, Scaling 8192, 0.2 CU"
+    assert extra["element_size"] == [0.0607, 0.0607, 0.0607]
+    json.dumps(extra)  # must be json-safe
+
+    assert med_volume.meta_header == {"SourceFormat": "SCANCO", "SourceFile": "IMG1237.AIM"}
+
+
+def test_scanco_volume_to_mids_isq_field_split():
+    meta = _isq_meta()
+    med_volume, _ = _load_scanco_volume(meta, "C0004378.ISQ")
+
+    expected_rescale_slope, expected_rescale_intercept = get_isq_hu_equation(meta)
+    expected_density_slope, expected_density_intercept = get_isq_density_equation(meta)
+    assert med_volume.omids_header == {
+        "Modality": "CT",
+        "Manufacturer": "SCANCO Medical",
+        "RescaleSlope": expected_rescale_slope,
+        "RescaleIntercept": expected_rescale_intercept,
+        "ImageTypeSiemens": "ORIGINAL/PRIMARY/AXIAL",
+        "XRayEnergy": 70.0,
+        "XRayExposureTime": 200.0,
+        "XRayExposure": pytest.approx(200 * 200000 / 1e6),
+        "ConvolutionKernel": "3",
+        "ScancoMuScaling": 4096,
+        "ScancoMuWater": 0.4792,
+        "ScancoDensitySlope": expected_density_slope,
+        "ScancoDensityIntercept": expected_density_intercept,
+    }
+    assert isinstance(med_volume.omids_header["ScancoMuScaling"], int)
+
+    assert med_volume.patient_header == {
+        "PatientName": "BME_2026",
+        "PatientID": "347",
+        "ScancoMeasurementIndex": "4559",
+        "ScancoSite": "4",
+        "ScannerID": "6020",
+        "ScanDate": "20260508",
+    }
+    assert "OriginalFile" not in med_volume.patient_header  # ISQ has no such field
+
+    extra = med_volume.extra_header
+    assert "filename" not in extra
+    for leaked_key in ("name", "patient_index", "index_measurement", "site", "scanner_id",
+                        "creation_date", "creation_date_string", "energy", "sampletime_us",
+                        "mu_scaling", "mu_water", "rescale_slope", "rescale_intercept"):
+        assert leaked_key not in extra
+    assert extra["rescale_units"] == "mg HA/ccm"
+    assert extra["slice_thickness_um"] == 34
+    json.dumps(extra)
+
+    assert med_volume.meta_header == {"SourceFormat": "SCANCO", "SourceFile": "C0004378.ISQ"}
+
+
+def test_scanco_converter_accepts_aim_and_isq():
+    aim_volume, _ = _load_scanco_volume(_aim_meta(), "scan.AIM")
+    isq_volume, _ = _load_scanco_volume(_isq_meta(), "scan.ISQ")
+
+    assert ScancoConverter.is_dataset_compatible(aim_volume) is True
+    assert ScancoConverter.is_dataset_compatible(isq_volume) is True
+
+
+def test_jsonable_handles_numpy_scalars_tuples_and_nested_dicts():
+    payload = {"a": np.float32(1.5), "b": (1, 2, np.int64(3)), "c": {"d": None}}
+    result = jsonable(payload)
+    json.dumps(result)
+    assert result["a"] == pytest.approx(1.5)
+    assert result["b"] == [1, 2, 3]
+    assert result["c"] == {"d": None}
