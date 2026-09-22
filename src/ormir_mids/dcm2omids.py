@@ -213,7 +213,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                 pass
 
         # After all the children, try the base class too.
-        if multiseries_part != converter_class.is_multiseries():
+        if multiseries_part == converter_class.is_multiseries():
             try:
                 converted_volume = converter_class.convert_dataset(med_volume)
             except Exception as e:
