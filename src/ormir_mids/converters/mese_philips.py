@@ -104,10 +104,6 @@ def _get_image_indices(med_volume: MedicalVolume):
 class MeSeConverterPhilipsRoot(Converter):
 
     @classmethod
-    def is_multiseries(cls):
-        return True
-
-    @classmethod
     def get_name(cls):
         return 'MESE_Philips_Root'
 
@@ -119,10 +115,6 @@ class MeSeConverterPhilipsRoot(Converter):
 MeSeConverterPhilipsRoot.set_parent(PhilipsMRConverter)
 
 class MeSeConverterPhilipsMagnitude(Converter):
-
-    @classmethod
-    def is_multiseries(cls):
-        return True
 
     @classmethod
     def get_name(cls):
@@ -156,10 +148,6 @@ class MeSeConverterPhilipsMagnitude(Converter):
 
 
 class MeSeConverterPhilipsPhase(Converter):
-
-    @classmethod
-    def is_multiseries(cls):
-        return True
 
     @classmethod
     def get_name(cls):
@@ -197,10 +185,6 @@ class MeSeConverterPhilipsPhase(Converter):
 
 
 class MeSeConverterPhilipsReconstructedMap(Converter):
-
-    @classmethod
-    def is_multiseries(cls):
-        return True
 
     @classmethod
     def get_name(cls):
