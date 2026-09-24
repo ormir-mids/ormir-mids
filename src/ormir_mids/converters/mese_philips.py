@@ -1,4 +1,3 @@
-import math
 import os
 
 import numpy as np
@@ -12,15 +11,17 @@ from ..utils.headers import get_raw_tag_value, group, slice_volume_3d
 def get_raw_scanning_sequence(med_volume: MedicalVolume):
     return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
 
+
 def _is_mese_philips(med_volume: MedicalVolume):
     """
-    Check if the given MedicalVolume is a MESE Philips dataset.
+    Check if the given MedicalVolume is an MESE Philips dataset.
     Parameters:
         med_volume: The MedicalVolume to test.
 
     Returns:
-        bool: True if the MedicalVolume is a MESE Philips dataset, False otherwise.
+        bool: True if the MedicalVolume is an MESE Philips dataset, False otherwise.
     """
+
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
     echo_times_list = med_volume.omids_header['EchoTime']
 
@@ -30,18 +31,41 @@ def _is_mese_philips(med_volume: MedicalVolume):
     return False
 
 
+def _get_ima_type(med_volume):
+    try:
+        ima_type_list = get_raw_tag_value(med_volume, '00080008')
+        if isinstance(ima_type_list[0], list):
+            flat_ima_type = ['/'.join(x) for x in ima_type_list]
+        else:
+            flat_ima_type = ima_type_list
+    except KeyError:
+        # Fallback tag defined in newer SIEMENS DICOMS and in Philips DICOMs
+        flat_ima_type = get_raw_tag_value(med_volume, '00089208')
+
+    scanning_sequence_list = get_raw_scanning_sequence(med_volume)
+
+    for i in range(len(flat_ima_type)):
+        if 'MAGNITUDE' in flat_ima_type[i] or '/M/' in flat_ima_type[i]:
+            flat_ima_type[i] = 0
+        elif 'PHASE' in flat_ima_type[i] or '/P/' in flat_ima_type[i]:
+            flat_ima_type[i] = 1
+        elif 'T2 MAP' in flat_ima_type[i] and scanning_sequence_list[i] == 'RM':
+            flat_ima_type[i] = 4
+
+    return flat_ima_type
+
+
 def _test_ima_type(med_volume: MedicalVolume, ima_type: str):
     """
     Test if the given MedicalVolume is of the given type.
     Parameters:
         med_volume (MedicalVolume): The MedicalVolume to test.
-        ima_type (str): The type to test, e.g. "MAGNITUDE", "PHASE"
+        ima_type (str): The type to test, 0 = Magnitude, 1 = Phase, 2 = Real, 3 = Imaginary
 
     Returns:
         bool: True if the MedicalVolume is of the given type, False otherwise.
     """
-    ima_type_list = get_raw_tag_value(med_volume, '00089208')
-    flat_ima_type = [x for xs in ima_type_list for x in xs]
+    flat_ima_type = _get_ima_type(med_volume)
 
     if ima_type in flat_ima_type:
         return True
@@ -62,23 +86,23 @@ def _get_image_indices(med_volume: MedicalVolume):
                  'reco': []
                  }
 
-    ima_type_list = get_raw_tag_value(med_volume, '00089208')
-    flat_ima_type = [x[0] for x in ima_type_list]
+    flat_ima_type = _get_ima_type(med_volume)
 
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
     for i in range(len(flat_ima_type)):
-        if flat_ima_type[i] == 'MAGNITUDE' and scanning_sequence_list[i] in ['SE', 'SPIN']:
+        if flat_ima_type[i] == 0 and scanning_sequence_list[i] in ['SE', 'SPIN']:
             ima_index['magnitude'].append(i)
-        elif flat_ima_type[i] == 'PHASE' and scanning_sequence_list[i] in ['SE', 'SPIN']:
+        elif flat_ima_type[i] == 1 and scanning_sequence_list[i] in ['SE', 'SPIN']:
             ima_index['phase'].append(i)
-        elif scanning_sequence_list[i] == 'RM':
+        elif flat_ima_type[i] == 4:
             ima_index['reco'].append(i)
 
     return ima_index
 
 
 class MeSeConverterPhilipsRoot(Converter):
+
     @classmethod
     def get_name(cls):
         return 'MESE_Philips_Root'
@@ -106,15 +130,20 @@ class MeSeConverterPhilipsMagnitude(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        return _test_ima_type(med_volume, 'MAGNITUDE')
+        return _test_ima_type(med_volume, 0)
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['magnitude'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
-        med_volume_out = group(med_volume_out, 'EchoTime')
         med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
+
+        echo_times_list = med_volume.omids_header['EchoTime']
+        echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
+        med_volume_out.omids_header['EchoTime'] = echo_times_nu
+        med_volume_out = group(med_volume_out, 'EchoTime')
+
         return med_volume_out
 
 
@@ -134,13 +163,17 @@ class MeSeConverterPhilipsPhase(Converter):
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        return _test_ima_type(med_volume, 'PHASE')
+        return _test_ima_type(med_volume, 1)
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
         med_volume_out = slice_volume_3d(med_volume, indices['phase'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
+
+        echo_times_list = med_volume.omids_header['EchoTime']
+        echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
+        med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
         med_volume_out.volume = np.where(med_volume_out.volume != 0,
