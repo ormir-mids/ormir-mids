@@ -16,7 +16,7 @@ def load_dicom(path, group_by = None):
     Returns:
         MedicalVolume with muscle-bids headers
     """
-    dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', ignore_ext=True)
+    dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', sort_by='InstanceNumber', ignore_ext=True)
     volume_list = dicom_reader.load(path)
     out = []
     for medical_volume in volume_list:
