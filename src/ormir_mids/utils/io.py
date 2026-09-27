@@ -43,7 +43,7 @@ def load_dicom_with_subfolders(path):
     def _read_dicom_recursive(rootdir):
         try:
             output_list = dicom_reader.load(rootdir)
-        except (FileNotFoundError, KeyError):
+        except (FileNotFoundError, KeyError, ValueError):
             output_list = []
         for element in output_list:
             setattr(element, 'path', rootdir)
