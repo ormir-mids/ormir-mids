@@ -228,8 +228,9 @@ class ScancoConverter(Converter):
             
         if 'SCANCO' not in str(get_raw_tag_value(med_volume, '00080070')[0]).upper():
              return False
-                    
-        return _test_ima_type(med_volume, "ORIGINAL")
+
+        # ISQ volumes are marked ORIGINAL, AIM volumes (derived from ISQ) are marked DERIVED
+        return _test_ima_type(med_volume, "ORIGINAL") or _test_ima_type(med_volume, "DERIVED")
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
