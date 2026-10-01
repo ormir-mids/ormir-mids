@@ -10,6 +10,7 @@ from ..utils.headers import get_raw_tag_value, group, slice_volume_3d
 def get_raw_scanning_sequence(med_volume: MedicalVolume):
     return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
 
+
 def _is_megre_philips(med_volume: MedicalVolume):
     """
     Check if the given MedicalVolume is a MEGRE Philips dataset.
@@ -32,14 +33,14 @@ def _is_megre_philips(med_volume: MedicalVolume):
 
 def _get_ima_type(med_volume):
     try:
-        # this is defined in the newer version of SIEMENS DICOMS and in Philips DICOMs
-        flat_ima_type = get_raw_tag_value(med_volume, '00089208')
-    except KeyError:
         ima_type_list = get_raw_tag_value(med_volume, '00080008')
         if isinstance(ima_type_list[0], list):
             flat_ima_type = ['/'.join(x) for x in ima_type_list]
         else:
             flat_ima_type = ima_type_list
+    except KeyError:
+        # this is defined in the newer version of SIEMENS DICOMS and in Philips DICOMs
+        flat_ima_type = get_raw_tag_value(med_volume, '00089208')
 
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
