@@ -44,6 +44,16 @@ def _get_ima_type(med_volume):
 
     scanning_sequence_list = get_raw_scanning_sequence(med_volume)
 
+    derived_mapping = {
+        "/W/": 4,
+        "/F/": 5,
+        "/IP/": 6,
+        "/OP/": 7,
+        "/FF/": 8,
+        "/T2_STAR/": 9,
+        "/B0/": 10,
+    }
+
     for i in range(len(flat_ima_type)):
         if 'MAGNITUDE' in flat_ima_type[i] or '/M/' in flat_ima_type[i]:
             flat_ima_type[i] = 0
@@ -55,7 +65,10 @@ def _get_ima_type(med_volume):
             flat_ima_type[i] = 3
         # Account for derived images that also have M/P/R/I ima_type
         if scanning_sequence_list[i] == 'RM':
-            flat_ima_type[i] = 4
+            flat_ima_type[i] = next(
+                (val for key, val in derived_mapping.items() if key in flat_ima_type[i]),
+                -1,  # derived image unknown
+            )
 
     return flat_ima_type
 
@@ -107,7 +120,13 @@ def _get_image_indices(med_volume: MedicalVolume):
                  'phase': [],
                  'real': [],
                  'imaginary': [],
-                 'reco': []
+                 'water': [],
+                 'fat': [],
+                 'ínphase': [],
+                 'outphase': [],
+                 'FF': [],
+                 'T2star': [],
+                 'B0': [],
                  }
 
     flat_ima_type = _get_ima_type(med_volume)
@@ -124,7 +143,20 @@ def _get_image_indices(med_volume: MedicalVolume):
         elif flat_ima_type[i] == 3 and scanning_sequence_list[i] in ['GR', 'GRADIENT']:
             ima_index['imaginary'].append(i)
         elif flat_ima_type[i] == 4:
-            ima_index['reco'].append(i)
+            ima_index['water'].append(i)
+        elif flat_ima_type[i] == 5:
+            ima_index['fat'].append(i)
+        elif flat_ima_type[i] == 6:
+            ima_index['inphase'].append(i)
+        elif flat_ima_type[i] == 7:
+            ima_index['outphase'].append(i)
+        elif flat_ima_type[i] == 8:
+            ima_index['FF'].append(i)
+        elif flat_ima_type[i] == 9:
+            ima_index['T2star'].append(i)
+        elif flat_ima_type[i] == 10:
+            ima_index['B0'].append(i)
+
 
     return ima_index
 
@@ -290,12 +322,11 @@ class MeGreConverterPhilipsImaginary(Converter):
         return med_volume_out
 
 
-class MeGreConverterPhilipsReconstructedMap(Converter):
-    # TO DO - new classes for FF, water, fat etc.
+class MeGreConverterPhilipsReconstructedWater(Converter):
 
     @classmethod
     def get_name(cls):
-        return 'MEGRE_Philips_Reconstructed'
+        return 'MEGRE_Philips_ReconstructedWater'
 
     @classmethod
     def get_directory(cls):
@@ -303,25 +334,185 @@ class MeGreConverterPhilipsReconstructedMap(Converter):
 
     @classmethod
     def get_suffix(cls):
-        return '_MEGRE_RECO'
+        return '_water'
 
     @classmethod
     def is_dataset_compatible(cls, med_volume: MedicalVolume):
-        scanning_sequence_list = get_raw_scanning_sequence(med_volume)
-
-        if 'RM' in scanning_sequence_list and ('GRADIENT' in scanning_sequence_list or 'GR' in scanning_sequence_list):
-            return True
-        return False
+        return _test_ima_type(med_volume, 4)
 
     @classmethod
     def convert_dataset(cls, med_volume: MedicalVolume):
         indices = _get_image_indices(med_volume)
-        med_volume_out = slice_volume_3d(med_volume, indices['reco'])
+        med_volume_out = slice_volume_3d(med_volume, indices['water'])
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
         return med_volume_out
+
+
+class MeGreConverterPhilipsReconstructedFat(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Philips_ReconstructedFat'
+
+    @classmethod
+    def get_directory(cls):
+        return os.path.join('mr-quant')
+
+    @classmethod
+    def get_suffix(cls):
+        return '_fat'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _test_ima_type(med_volume, 5)
+
+    @classmethod
+    def convert_dataset(cls, med_volume: MedicalVolume):
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['fat'])
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        return med_volume_out
+
+
+class MeGreConverterPhilipsReconstructedInPhase(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Philips_ReconstructedInPhase'
+
+    @classmethod
+    def get_directory(cls):
+        return os.path.join('mr-quant')
+
+    @classmethod
+    def get_suffix(cls):
+        return '_inphase'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _test_ima_type(med_volume, 6)
+
+    @classmethod
+    def convert_dataset(cls, med_volume: MedicalVolume):
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['inphase'])
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        return med_volume_out
+
+
+class MeGreConverterPhilipsReconstructedOutPhase(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Philips_ReconstructedOutPhase'
+
+    @classmethod
+    def get_directory(cls):
+        return os.path.join('mr-quant')
+
+    @classmethod
+    def get_suffix(cls):
+        return '_outphase'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _test_ima_type(med_volume, 7)
+
+    @classmethod
+    def convert_dataset(cls, med_volume: MedicalVolume):
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['outphase'])
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        return med_volume_out
+
+
+
+class MeGreConverterPhilipsReconstructedFFmap(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Philips_ReconstructedFFmap'
+
+    @classmethod
+    def get_directory(cls):
+        return os.path.join('mr-quant')
+
+    @classmethod
+    def get_suffix(cls):
+        return '_FFmap'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _test_ima_type(med_volume, 8)
+
+    @classmethod
+    def convert_dataset(cls, med_volume: MedicalVolume):
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['FF'])
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        return med_volume_out
+
+
+class MeGreConverterPhilipsReconstructedT2starMap(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Philips_ReconstructedT2starMap'
+
+    @classmethod
+    def get_directory(cls):
+        return os.path.join('mr-quant')
+
+    @classmethod
+    def get_suffix(cls):
+        return '_T2starmap'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _test_ima_type(med_volume, 9)
+
+    @classmethod
+    def convert_dataset(cls, med_volume: MedicalVolume):
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['T2star'])
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        return med_volume_out
+
+
+class MeGreConverterPhilipsReconstructedFieldMap(Converter):
+
+    @classmethod
+    def get_name(cls):
+        return 'MEGRE_Philips_ReconstructedFieldMap'
+
+    @classmethod
+    def get_directory(cls):
+        return os.path.join('mr-quant')
+
+    @classmethod
+    def get_suffix(cls):
+        return '_fieldmap'
+
+    @classmethod
+    def is_dataset_compatible(cls, med_volume: MedicalVolume):
+        return _test_ima_type(med_volume, 10)
+
+    @classmethod
+    def convert_dataset(cls, med_volume: MedicalVolume):
+        indices = _get_image_indices(med_volume)
+        med_volume_out = slice_volume_3d(med_volume, indices['B0'])
+        med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Gradient Echo'
+        return med_volume_out
+
 
 MeGreConverterPhilipsMagnitude.set_parent(MeGreConverterPhilipsRoot)
 MeGreConverterPhilipsPhase.set_parent(MeGreConverterPhilipsRoot)
 MeGreConverterPhilipsReal.set_parent(MeGreConverterPhilipsRoot)
 MeGreConverterPhilipsImaginary.set_parent(MeGreConverterPhilipsRoot)
-MeGreConverterPhilipsReconstructedMap.set_parent(PhilipsMRConverter)
+MeGreConverterPhilipsReconstructedWater.set_parent(PhilipsMRConverter)
+MeGreConverterPhilipsReconstructedFat.set_parent(PhilipsMRConverter)
+MeGreConverterPhilipsReconstructedInPhase.set_parent(PhilipsMRConverter)
+MeGreConverterPhilipsReconstructedOutPhase.set_parent(PhilipsMRConverter)
+MeGreConverterPhilipsReconstructedFFmap.set_parent(PhilipsMRConverter)
+MeGreConverterPhilipsReconstructedT2starMap.set_parent(PhilipsMRConverter)
+MeGreConverterPhilipsReconstructedFieldMap.set_parent(PhilipsMRConverter)
