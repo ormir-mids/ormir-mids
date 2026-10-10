@@ -241,7 +241,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
                         series_prefix = f'{first_series:03d}_'
 
                     save_omids(
-                        str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
+                        str(output_path / (series_prefix + converter_class.get_file_name(patient_name, session))) + '.nii.gz',
                         converted_multiseries_volume, save_patient_json, save_extra_json)
                     print('Volume', med_volume.path, converted_multiseries_volume.shape, 'saved with', converter_class.get_name(), 'using multiseries concatenation')
                     return True # we successfully converted the multiseries volume
@@ -249,7 +249,7 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
             series_prefix = ''
             if ADD_SERIES_NUMBER:
                 series_prefix = f'{get_raw_tag_value(med_volume, "00200011")[0]:03d}_'
-            save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name))) + '.nii.gz',
+            save_omids(str(output_path / (series_prefix + converter_class.get_file_name(patient_name, session))) + '.nii.gz',
                        converted_volume, save_patient_json, save_extra_json)
             print('Volume', med_volume.volume.shape, med_volume.path, 'saved with', converter_class.get_name())
             return True # we successfully converted the volume

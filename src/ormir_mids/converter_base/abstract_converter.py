@@ -40,7 +40,8 @@ class Converter(ABC):
 
     @classmethod
     def get_file_name(cls, subject_id: str, session_id: str = None):
-        return f'sub-{subject_id}' + (f'_ses-{session_id}' if session_id else '') + cls.get_suffix()
+        fname = f'sub-{subject_id}' + (f'_ses-{session_id}' if session_id else '') + cls.get_suffix()
+        return fname
 
     @classmethod
     def get_suffix(cls):
