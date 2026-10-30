@@ -539,19 +539,36 @@ def group(medical_volume, key):
 
         Parameters:
             medical_volume (MedicalVolume): the 3D medical volume
-            key (str): the key to group the slices by. Must be an entry in BIDS header
+            key (str): the key to group the slices by. Must be entry in OMIDS
+                or extra headers
 
         Returns:
             MedicalVolume: the 4D medical volume with headers
 
     """
 
-    assert hasattr(medical_volume, 'omids_header'), 'Error grouping: medical volume must have a bids header'
+    assert hasattr(medical_volume, 'omids_header'), 'Error grouping: medical volume must have omids header'
     assert medical_volume.ndim == 3, 'Error grouping: medical volume must be three dimensional'
-    assert key in medical_volume.omids_header, f'Error: medical volume does not have {key}'
+
+    if key in medical_volume.omids_header:
+        all_values = medical_volume.omids_header[key]
+        source_header = medical_volume.omids_header
+
+    elif key in medical_volume.extra_header:
+        element = medical_volume.extra_header[key]
+
+        if isinstance(element, dict):
+            value_tag = _get_value_tag(element)
+            all_values = element[value_tag]
+        else:
+            all_values = element
+
+        source_header = medical_volume.extra_header
+
+    else:
+        raise KeyError(f'Error: medical volume does not have {key}')
 
     indices_dict = OrderedDict({})
-    all_values = medical_volume.omids_header[key]
     if type(all_values) != list:
         return medical_volume  # nothing to do
 
@@ -602,9 +619,16 @@ def group(medical_volume, key):
                     element[value_tag] = new_value_list
                     element['is4dList'] = True
 
+    grouped_vals = [i[0] for i in items]
 
     medical_volume_out.omids_header['FourthDimension'] = key
-    medical_volume_out.omids_header[key] = [i[0] for i in items]  # only keep the different values
+    if source_header == medical_volume.omids_header:
+        medical_volume_out.omids_header[key] = grouped_vals
+
+    elif source_header == medical_volume.extra_header:
+        value_tag = _get_value_tag(medical_volume_out.extra_header[key])
+        medical_volume_out.extra_header[key][value_tag] = grouped_vals
+
     group_tags(medical_volume_out.extra_header)
     group_tags(medical_volume_out.meta_header)
 
