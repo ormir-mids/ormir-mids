@@ -122,7 +122,7 @@ def _get_image_indices(med_volume: MedicalVolume):
                  'imaginary': [],
                  'water': [],
                  'fat': [],
-                 'ínphase': [],
+                 'inphase': [],
                  'outphase': [],
                  'FF': [],
                  'T2star': [],
