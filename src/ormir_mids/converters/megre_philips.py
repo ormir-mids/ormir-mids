@@ -255,9 +255,13 @@ class MeGreConverterPhilipsPhase(Converter):
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
-        med_volume_out.volume = np.where(med_volume_out.volume != 0,
-                                         (med_volume_out.volume - 2048.) * np.pi / 2048.,
-                                         med_volume_out.volume).astype(np.float32)
+        vol = med_volume_out.volume
+        vmax = np.nanmax(vol)
+        if vmax > np.pi * 2:
+            # Pixel values likely classic Philips phase. Rescale to [-pi, +pi]
+            med_volume_out.volume = np.where(vol != 0,
+                                             (vol - 2048.) * np.pi / 2048.,
+                                             vol).astype(np.float32)
 
         return med_volume_out
 
