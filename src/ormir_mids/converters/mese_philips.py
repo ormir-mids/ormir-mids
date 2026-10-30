@@ -187,7 +187,7 @@ class MeSeConverterPhilipsPhase(Converter):
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
 
         echo_times_list = med_volume.omids_header['EchoTime']
-        echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
+        echo_times_nu = [echo_times_list[i] for i in indices['phase']]
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
