@@ -191,9 +191,13 @@ class MeSeConverterPhilipsPhase(Converter):
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
-        med_volume_out.volume = np.where(med_volume_out.volume != 0,
-                                         (med_volume_out.volume - 2048.) * np.pi / 2048.,
-                                         med_volume_out.volume).astype(np.float32)
+        vol = med_volume_out.volume
+        vmax = np.nanmax(vol)
+        if vmax > np.pi * 2:
+            # Pixel values likely classic Philips phase. Rescale to [-pi, +pi]
+            med_volume_out.volume = np.where(vol != 0,
+                                             (vol - 2048.) * np.pi / 2048.,
+                                             vol).astype(np.float32)
 
         med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
         return med_volume_out
