@@ -202,8 +202,14 @@ class MeGreConverterPhilipsMagnitude(Converter):
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
-        med_volume_out = group(med_volume_out, 'EchoTime')
-
+        try:
+            med_volume_out = group(med_volume_out, 'EchoTime')
+        except ValueError as e:
+            if "same shape" in str(e):
+                # Special case where echo times not unique, echo numbers are
+                med_volume_out = group(med_volume_out, '00180086')
+            else:
+                raise
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
@@ -238,8 +244,14 @@ class MeGreConverterPhilipsPhase(Converter):
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = [echo_times_list[i] for i in indices['phase']]
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
-        med_volume_out = group(med_volume_out, 'EchoTime')
-
+        try:
+            med_volume_out = group(med_volume_out, 'EchoTime')
+        except ValueError as e:
+            if "same shape" in str(e):
+                # Special case where echo times not unique, echo numbers are
+                med_volume_out = group(med_volume_out, '00180086')
+            else:
+                raise
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
@@ -278,8 +290,14 @@ class MeGreConverterPhilipsReal(Converter):
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = [echo_times_list[i] for i in indices['real']]
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
-        med_volume_out = group(med_volume_out, 'EchoTime')
-
+        try:
+            med_volume_out = group(med_volume_out, 'EchoTime')
+        except ValueError as e:
+            if "same shape" in str(e):
+                # Special case where echo times not unique, echo numbers are
+                med_volume_out = group(med_volume_out, '00180086')
+            else:
+                raise
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
@@ -314,8 +332,14 @@ class MeGreConverterPhilipsImaginary(Converter):
         echo_times_list = med_volume.omids_header['EchoTime']
         echo_times_nu = [echo_times_list[i] for i in indices['imaginary']]
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
-        med_volume_out = group(med_volume_out, 'EchoTime')
-
+        try:
+            med_volume_out = group(med_volume_out, 'EchoTime')
+        except ValueError as e:
+            if "same shape" in str(e):
+                # Special case where echo times not unique, echo numbers are
+                med_volume_out = group(med_volume_out, '00180086')
+            else:
+                raise
         med_volume_out.omids_header['MagneticFieldStrength'] = get_raw_tag_value(med_volume, '00180087')[0]
         med_volume_out.omids_header['WaterFatShift'] = _water_fat_shift_calc(med_volume)
 
