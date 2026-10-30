@@ -8,7 +8,22 @@ from ..utils.headers import get_raw_tag_value, group, slice_volume_3d
 
 
 def get_raw_scanning_sequence(med_volume: MedicalVolume):
-    return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
+    """
+    Get ScanningSequence value for each frame in the given MedicalVolume. When
+    this is a plain string (e.g. 'GR'), return a list of that value per frame.
+    A MedicalVolume with mixed sequences already returns a list of strings.
+    Args:
+        med_volume: The MedicalVolume to test.
+
+    Returns:
+        list: Scanning sequence for each frame in the data
+    """
+
+    vals = get_raw_tag_value(med_volume, '00180020', force_raw=True)
+    vals = [v if isinstance(v, str) else v[0] for v in vals]
+    te = med_volume.omids_header['EchoTime']
+    n = len(te) if isinstance(te, list) else 1
+    return vals * n if len(vals) == 1 else vals
 
 
 def _is_megre_philips(med_volume: MedicalVolume):
