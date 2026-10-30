@@ -9,7 +9,22 @@ from ..utils.headers import get_raw_tag_value, group, slice_volume_3d
 
 
 def get_raw_scanning_sequence(med_volume: MedicalVolume):
-    return [v[0] for v in get_raw_tag_value(med_volume, '00180020', force_raw=True)]
+    """
+    Get ScanningSequence value for each frame in the given MedicalVolume. When
+    this is a plain string (e.g. 'SE'), return a list of that value per frame.
+    A MedicalVolume with mixed sequences already returns a list of strings.
+    Args:
+        med_volume: The MedicalVolume to test.
+
+    Returns:
+        list: Scanning sequence for each frame in the data
+    """
+
+    vals = get_raw_tag_value(med_volume, '00180020', force_raw=True)
+    vals = [v if isinstance(v, str) else v[0] for v in vals]
+    te = med_volume.omids_header['EchoTime']
+    n = len(te) if isinstance(te, list) else 1
+    return vals * n if len(vals) == 1 else vals
 
 
 def _is_mese_philips(med_volume: MedicalVolume):
@@ -172,13 +187,17 @@ class MeSeConverterPhilipsPhase(Converter):
         med_volume_out.omids_header['PulseSequenceType'] = 'Multi-echo Spin Echo'
 
         echo_times_list = med_volume.omids_header['EchoTime']
-        echo_times_nu = [echo_times_list[i] for i in indices['magnitude']]
+        echo_times_nu = [echo_times_list[i] for i in indices['phase']]
         med_volume_out.omids_header['EchoTime'] = echo_times_nu
         med_volume_out = group(med_volume_out, 'EchoTime')
 
-        med_volume_out.volume = np.where(med_volume_out.volume != 0,
-                                         (med_volume_out.volume - 2048.) * np.pi / 2048.,
-                                         med_volume_out.volume).astype(np.float32)
+        vol = med_volume_out.volume
+        vmax = np.nanmax(vol)
+        if vmax > np.pi * 2:
+            # Pixel values likely classic Philips phase. Rescale to [-pi, +pi]
+            med_volume_out.volume = np.where(vol != 0,
+                                             (vol - 2048.) * np.pi / 2048.,
+                                             vol).astype(np.float32)
 
         med_volume_out.omids_header['RefocusingFlipAngle'] = 180.0
         return med_volume_out
