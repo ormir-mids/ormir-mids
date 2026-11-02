@@ -93,11 +93,11 @@ You can find the API documentation of ORMIR-MIDS on [Read the Docs](https://ormi
 ---
 ## Citation
 
-When using ORMIR-MIDS, please cite the following abstract (paper coming in the next months!): 
+When using ORMIR-MIDS, please cite the following paper: 
 
-*S. Bonaretti, M. A. Espinosa Hernandez, F. Chiumento, Y. Founas, M. Froeling, J. Hirvasniemi, G. Iori, Y. Lee, S. Matuschik, M. Monzon, F. Santini, D. Cameron.* 
+*Francesco Santini, Maria Monzon, Simone Poncioni, Serena Bonaretti, Jukka Hirvasniemi, Martijn Froeling, Donnie Cameron* 
 ***ORMIR-MIDS:An open standard for curating and sharing musculoskeletal imaging data.***
-*24th International Workshop on Quantitative Musculoskeletal Imaging (QMSKI) The Barossa Valley, South Australia. November 3-8, 2024.*
+*JBMR Plus, Volume 10, Issue 3, March 2026. doi: 10.1093/jbmrpl/ziag013*
 
 
 --- 
