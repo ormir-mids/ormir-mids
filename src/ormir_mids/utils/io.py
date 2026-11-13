@@ -1,22 +1,32 @@
 import json
 import os
 
+from typing import Optional, Sequence, Union
+
 from voxel import DicomReader, DicomWriter, NiftiReader, NiftiWriter
 from ..utils import headers
+from .OMidsMedVolume import OMidsMedVolume as MedicalVolume
 
 
-def load_dicom(path, group_by = None):
+def load_dicom(
+        path: str,
+        group_by: Optional[str] = None,
+        dicom_group_by: Union[str, int, Sequence[Union[str, int]]] = ['SeriesInstanceUID', 'ImageOrientationPatient']
+    ) -> list[MedicalVolume]:
     """
     Loads all dicom files in a folder.
 
     Parameters:
-        path (str): Path to the folder
-        group_by (str): If not None, group the volumes by the specified header
+        path (str): Path to the folder.
+        group_by (Optional[str]): If not None, group the volumes by the specified header to convert 3D volumes into 4D (e.g., grouping by echo time).
+        dicom_group_by (Union[str, int, Sequence[Union[str, int]]]): Determines how DICOM images are split into different volumes.
+            DICOM files with differing values for the specified headers (e.g., 'ImageOrientationPatient') will not be included in the same volume.
+            Defaults to ['SeriesInstanceUID', 'ImageOrientationPatient'].
 
     Returns:
-        MedicalVolume with muscle-bids headers
+        list[MedicalVolume]: List of MedicalVolumes with ormir-mids headers
     """
-    dicom_reader = DicomReader(num_workers=0, group_by=['SeriesInstanceUID', 'ImageOrientationPatient'], sort_by='InstanceNumber', ignore_ext=True)
+    dicom_reader = DicomReader(num_workers=0, group_by=dicom_group_by, sort_by='InstanceNumber', ignore_ext=True)
     volume_list = dicom_reader.load(path)
     out = []
     for medical_volume in volume_list:
@@ -28,18 +38,23 @@ def load_dicom(path, group_by = None):
     return out
 
 
-def load_dicom_with_subfolders(path):
+def load_dicom_with_subfolders(
+        path: str,
+        dicom_group_by: Union[str, int, Sequence[Union[str, int]]] = ['SeriesInstanceUID', 'ImageOrientationPatient']
+    ) -> list[MedicalVolume]:
     """
     Loads all dicom files in a folder and its subfolders.
 
     Parameters:
-        path (str): Path to the root folder
+        path (str): Path to the root folder.
+        dicom_group_by (Union[str, int, Sequence[Union[str, int]]]): Determines how DICOM images are split into different volumes.
+            DICOM files with differing values for the specified headers (e.g., 'ImageOrientationPatient') will not be included in the same volume.
+            Defaults to ['SeriesInstanceUID', 'ImageOrientationPatient'].
 
     Returns:
-        list: List of dicom volumes
-
+        list[MedicalVolume]: List of MedicalVolume with ormir-mids headers
     """
-    dicom_reader = DicomReader(num_workers=0, group_by='SeriesInstanceUID', ignore_ext=True)
+    dicom_reader = DicomReader(num_workers=0, group_by=dicom_group_by, sort_by='InstanceNumber', ignore_ext=True)
     def _read_dicom_recursive(rootdir):
         try:
             output_list = dicom_reader.load(rootdir)
