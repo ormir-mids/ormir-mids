@@ -10,7 +10,7 @@ from voxel import MedicalVolume
 
 from .converters import RootConverter
 from .utils.headers import concatenate_volumes_3d, group, get_raw_tag_value, force_change_header_value
-from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders
+from .utils.io import load_dicom, save_omids, load_dicom_with_subfolders, clean_runs
 import pathlib
 
 import argparse
@@ -420,6 +420,12 @@ def convert_dicom_to_ormirmids(input_folder, output_folder, anonymize='anon', re
             data_info['manual_converters'].append(info_object)
         else:
             print("No compatible converter found for dataset", med_volume.path)
+
+    if outputDir:
+        # disambiguate datasets with the same name saved by safe_save
+        for root, dirs, files in os.walk(outputDir):
+            clean_runs(root)
+
     return data_info
 
 
